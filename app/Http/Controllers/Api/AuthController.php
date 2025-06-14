@@ -18,23 +18,23 @@ class AuthController extends Controller
             'name'     => 'required|string|max:255',
             'email'    => 'required|string|email|unique:users,email',
             'password' => 'required|string|confirmed|min:8',
-            'role'     => 'required|string|in:admin,user,vendedor',
         ]);
 
         $user = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
             'password' => Hash::make($request->password),
-            'role'     => $request->role,
         ]);
+
+        $user->sendEmailVerificationNotification();
 
         $token = $user->createToken('api-token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Usuario creado exitosamente',
+            'message' => 'Usuario creado exitosamente. Revisa tu email para confirmar.',
             'user'    => $user,
             'token'   => $token,
-        ], 201);
+        ], 201)->header('Content-Type', 'application/json');
     }
 
     public function login(Request $request)
