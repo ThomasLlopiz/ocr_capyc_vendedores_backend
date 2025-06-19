@@ -12,18 +12,29 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function index()
+    {
+        $users = User::all(['id', 'name', 'email', 'role', 'code', 'email_verified_at', 'created_at', 'updated_at']);
+        return response()->json([
+            'message' => 'Lista de usuarios obtenida exitosamente',
+            'users'   => $users,
+        ]);
+    }
+
     public function register(Request $request)
     {
         $request->validate([
-            'name'     => 'required|string|max:255',
+            'name'     => 'required|string|max:255|unique:users,name',
             'email'    => 'required|string|email|unique:users,email',
             'password' => 'required|string|confirmed|min:8',
+            'code'     => 'nullable|string|size:6',
         ]);
 
         $user = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
             'password' => Hash::make($request->password),
+            'code'     => $request->code ?? null,
         ]);
 
         $user->sendEmailVerificationNotification();
@@ -65,10 +76,11 @@ class AuthController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'name'     => 'string|max:255',
+            'name'     => 'string|max:255|unique:users,name,' . $user->id,
             'email'    => 'string|email|unique:users,email,' . $user->id,
             'password' => 'nullable|string|confirmed|min:8',
             'role'     => 'string|in:admin,user,vendedor',
+            'code'     => 'nullable|string|size:6',
         ]);
 
         $user->update(array_filter([
@@ -76,6 +88,7 @@ class AuthController extends Controller
             'email'    => $request->email,
             'password' => $request->password ? Hash::make($request->password) : null,
             'role'     => $request->role,
+            'code'     => $request->code,
         ]));
 
         return response()->json([
