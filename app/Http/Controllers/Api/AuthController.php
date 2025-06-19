@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -23,31 +24,49 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-        $request->validate([
-            'name'     => 'required|string|max:255|unique:users,name',
-            'email'    => 'required|string|email|unique:users,email',
-            'password' => 'required|string|confirmed|min:8',
-            'code'     => 'nullable|string|size:6',
-        ]);
+        Log::info('Register endpoint hit', ['request' => $request->all()]);
 
-        $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'code'     => $request->code ?? null,
-        ]);
+        try {
+            $request->validate([
+                'name'     => 'required|string|max:255|unique:users,name',
+                'email'    => 'required|string|email|unique:users,email',
+                'password' => 'required|string|confirmed|min:8',
+                'code'     => 'nullable|string|size:6',
+            ], [
+                'name.required'      => 'El nombre es obligatorio.',
+                'name.unique'        => 'El nombre ya está registrado.',
+                'email.required'     => 'El correo es obligatorio.',
+                'email.email'        => 'El correo debe ser una dirección válida.',
+                'email.unique'       => 'El correo ya está registrado.',
+                'password.required'  => 'La contraseña es obligatoria.',
+                'password.min'       => 'La contraseña debe tener al menos 8 caracteres.',
+                'password.confirmed' => 'La confirmación de la contraseña no coincide.',
+                'code.size'          => 'El código debe tener exactamente 6 caracteres.',
+            ]);
 
-        $user->sendEmailVerificationNotification();
+            $user = User::create([
+                'name'     => $request->name,
+                'email'    => $request->email,
+                'password' => Hash::make($request->password),
+                'code'     => $request->code ?? null,
+            ]);
 
-        $token = $user->createToken('api-token')->plainTextToken;
+            $user->sendEmailVerificationNotification();
 
-        return response()->json([
-            'message' => 'Usuario creado exitosamente. Revisa tu email para confirmar.',
-            'user'    => $user,
-            'token'   => $token,
-        ], 201)->header('Content-Type', 'application/json');
+            $token = $user->createToken('api-token')->plainTextToken;
+
+            return response()->json([
+                'message' => 'Usuario creado exitosamente. Revisa tu email para confirmar.',
+                'user'    => $user,
+                'token'   => $token,
+            ], 201)->header('Content-Type', 'application/json');
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors'  => $e->errors(),
+            ], 422);
+        }
     }
-
     public function login(Request $request)
     {
         $request->validate([
