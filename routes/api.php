@@ -3,6 +3,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\VerificationController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/users', [AuthController::class, 'index'])->middleware('auth:sanctum');
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
