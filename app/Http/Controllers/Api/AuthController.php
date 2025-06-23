@@ -13,13 +13,36 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::all(['id', 'name', 'email', 'role', 'code', 'email_verified_at', 'created_at', 'updated_at']);
+        $currentUser = $request->user();
+        Log::info('Users endpoint hit', [
+            'user_id'   => $currentUser->id,
+            'user_role' => $currentUser->role,
+        ]);
+
+        if ($currentUser->role !== 'admin') {
+            Log::warning('Unauthorized access attempt to users endpoint', ['user_id' => $currentUser->id]);
+            return response()->json(['message' => 'Acceso denegado: Solo administradores pueden listar usuarios.'], 403);
+        }
+
+        $users = User::where(function ($query) {
+            $query->where('role', '!=', 'admin')
+                ->orWhereNull('role')
+                ->orWhere('role', '');
+        })
+            ->select(['id', 'name', 'email', 'role', 'code', 'email_verified_at', 'created_at', 'updated_at'])
+            ->get();
+
+        Log::info('Users retrieved', [
+            'count' => $users->count(),
+            'users' => $users->toArray(),
+        ]);
+
         return response()->json([
             'message' => 'Lista de usuarios obtenida exitosamente',
             'users'   => $users,
-        ]);
+        ], 200);
     }
 
     public function register(Request $request)
@@ -92,28 +115,25 @@ class AuthController extends Controller
 
     public function update(Request $request)
     {
-        $user = $request->user();
-
         $request->validate([
-            'name'     => 'string|max:255|unique:users,name,' . $user->id,
-            'email'    => 'string|email|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|confirmed|min:8',
-            'role'     => 'string|in:admin,user,vendedor',
-            'code'     => 'nullable|string|size:6',
+            'email' => 'required|email',
+            'name'  => 'required|string',
+            'code'  => 'nullable|string|size:6',
+            'role'  => 'nullable|string|in:user,vendedor,admin,',
         ]);
 
-        $user->update(array_filter([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => $request->password ? Hash::make($request->password) : null,
-            'role'     => $request->role,
-            'code'     => $request->code,
-        ]));
+        $user = User::where('email', $request->email)->firstOrFail();
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Solo administradores pueden actualizar usuarios.'], 403);
+        }
 
-        return response()->json([
-            'message' => 'Usuario actualizado exitosamente',
-            'user'    => $user,
+        $user->update([
+            'name' => $request->name,
+            'code' => $request->code,
+            'role' => $request->role,
         ]);
+
+        return response()->json(['message' => 'Usuario actualizado exitosamente'], 200);
     }
 
     public function delete(Request $request)
