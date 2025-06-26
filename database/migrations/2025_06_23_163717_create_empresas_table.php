@@ -15,7 +15,7 @@ class CreateEmpresasTable extends Migration
             $table->string('nombre', 200)->comment('Nombre de la empresa, máximo 200 caracteres');
             $table->string('n_fantasia', 200)->comment('Nombre de fantasía, máximo 200 caracteres');
             $table->bigInteger('cuit_cuil')->unsigned()->comment('CUIT/CUIL de 11 dígitos');
-            $table->bigInteger('vendedor')->unsigned()->comment('Código de vendedor de 6 dígitos (relleno con ceros a la izquierda)');
+            $table->string('vendedor', 6)->comment('Código de vendedor de 6 dígitos (relleno con ceros a la izquierda)');
             $table->timestamps();
         });
     }

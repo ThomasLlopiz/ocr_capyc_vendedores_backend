@@ -10,22 +10,23 @@ class EmpresaController extends Controller
 {
     public function index(): JsonResponse
     {
-        $empresas = Empresa::all();
-        if ($empresas->isEmpty()) {
-            return response()->json(['message' => 'No se encontraron empresas'], 200);
-        }
+        $empresas = Empresa::all()->map(function ($empresa) {
+            $empresa->codigo   = str_pad($empresa->codigo, 6, '0', STR_PAD_LEFT);
+            $empresa->vendedor = str_pad($empresa->vendedor, 6, '0', STR_PAD_LEFT);
+            return $empresa;
+        });
         return response()->json($empresas);
     }
 
     public function store(Request $request): JsonResponse
     {
         $validatedData = $request->validate([
-            'codigo'     => 'required|numeric|digits:6',
+            'codigo'     => 'required|string|size:6',
             'tienda'     => 'required|numeric|between:1,9999',
             'nombre'     => 'required|string|max:200',
             'n_fantasia' => 'required|string|max:200',
             'cuit_cuil'  => 'required|numeric|digits:11',
-            'vendedor'   => 'required|numeric|digits:6',
+            'vendedor'   => 'required|string|size:6',
         ]);
 
         $empresa = Empresa::create([
@@ -49,12 +50,12 @@ class EmpresaController extends Controller
     public function update(Request $request, $id): JsonResponse
     {
         $validatedData = $request->validate([
-            'codigo'     => 'required|numeric|digits:6',
+            'codigo'     => 'required|string|size:6',
             'tienda'     => 'required|numeric|between:1,9999',
             'nombre'     => 'required|string|max:200',
             'n_fantasia' => 'required|string|max:200',
             'cuit_cuil'  => 'required|numeric|digits:11',
-            'vendedor'   => 'required|numeric|digits:6',
+            'vendedor'   => 'required|string|size:6',
         ]);
 
         $empresa = Empresa::findOrFail($id);
