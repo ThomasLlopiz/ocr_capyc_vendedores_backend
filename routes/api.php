@@ -3,7 +3,10 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EmpresaController;
 use App\Http\Controllers\Api\VerificationController;
+use App\Http\Controllers\SB1Controller;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/buscar-codigo', [SB1Controller::class, 'buscarCodigo']);
 
 Route::get('/users', [AuthController::class, 'index'])->middleware('auth:sanctum');
 Route::post('/register', [AuthController::class, 'register']);
