@@ -2,9 +2,13 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EmpresaController;
+use App\Http\Controllers\Api\JsonController;
 use App\Http\Controllers\Api\VerificationController;
 use App\Http\Controllers\SB1Controller;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/json/{nombre}', [JsonController::class, 'show']);
+Route::put('/json/{nombre}', [JsonController::class, 'update']);
 
 Route::post('/buscar-codigo', [SB1Controller::class, 'buscarCodigo']);
 
