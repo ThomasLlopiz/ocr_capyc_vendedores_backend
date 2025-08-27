@@ -1,0 +1,158 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('sc5010', function (Blueprint $table) {
+            // VARCHAR(9)
+            $table->string('c5_filial', 9);
+            $table->string('c5_num', 9);
+            $table->string('c5_tipo', 9);
+            $table->string('c5_cliente', 9);
+            $table->string('c5_lojacli', 9);
+            $table->string('c5_client', 9);
+            $table->string('c5_lojaent', 9);
+            $table->string('c5_xnomcli', 90);
+            $table->string('c5_transp', 9);
+            $table->string('c5_naturez', 90);
+            $table->string('c5_tipocli', 9);
+            $table->string('c5_condpag', 9);
+            $table->string('c5_xoccli', 90);
+            $table->string('c5_xnumori', 9);
+            $table->string('c5_tabela', 9);
+            $table->string('c5_vend1', 9);
+            $table->double('c5_comis1')->default(0);
+            $table->string('c5_vend2', 9);
+            $table->double('c5_comis2')->default(0);
+            $table->string('c5_vend3', 9);
+            $table->double('c5_comis3')->default(0);
+            $table->string('c5_vend4', 9);
+            $table->double('c5_comis4')->default(0);
+            $table->string('c5_vend5', 9);
+            $table->double('c5_comis5')->default(0);
+            $table->double('c5_desc1')->default(0);
+            $table->double('c5_desc2')->default(0);
+            $table->double('c5_desc3')->default(0);
+            $table->double('c5_desc4')->default(0);
+            $table->string('c5_banco', 9);
+            $table->double('c5_descfi')->default(0);
+            $table->string('c5_emissao', 9);
+            $table->string('c5_cotacao', 9);
+            $table->double('c5_parc1')->default(0);
+            $table->string('c5_data1', 9);
+            $table->double('c5_parc2')->default(0);
+            $table->string('c5_data2', 9);
+            $table->double('c5_parc3')->default(0);
+            $table->string('c5_data3', 9);
+            $table->double('c5_parc4')->default(0);
+            $table->double('c5_despesa')->default(0);
+            $table->double('c5_fretaut')->default(0);
+            $table->string('c5_reajust', 9);
+            $table->double('c5_moeda')->default(0);
+            $table->string('c5_data4', 9);
+            $table->string('c5_tpfrete', 9);
+            $table->double('c5_frete')->default(0);
+            $table->double('c5_seguro')->default(0);
+            $table->double('c5_pesol')->default(0);
+            $table->double('c5_pbruto')->default(0);
+            $table->double('c5_reimp')->default(0);
+            $table->string('c5_redesp', 9);
+            $table->double('c5_volume1')->default(0);
+            $table->double('c5_volume2')->default(0);
+            $table->double('c5_volume3')->default(0);
+            $table->double('c5_volume4')->default(0);
+            $table->string('c5_especi1', 90);
+            $table->string('c5_especi2', 90);
+            $table->string('c5_especi3', 90);
+            $table->string('c5_inciss', 9);
+            $table->string('c5_liberok', 9);
+            $table->string('c5_ok', 9);
+            $table->string('c5_nota', 92);
+            $table->string('c5_serie', 9);
+            $table->string('c5_especi4', 90);
+            $table->string('c5_os', 9);
+            $table->double('c5_acrsfin')->default(0);
+            $table->string('c5_mennota', 90);
+            $table->string('c5_menpad', 9);
+            $table->string('c5_kitrep', 9);
+            $table->string('c5_tipotit', 9);
+            $table->string('c5_tiplib', 9);
+            $table->string('c5_tiporem', 9);
+            $table->double('c5_txmoeda')->default(0);
+            $table->string('c5_numprof', 92);
+            $table->double('c5_descont')->default(0);
+            $table->string('c5_pedexp', 90);
+            $table->string('c5_tpcarga', 9);
+            $table->string('c5_docger', 9);
+            $table->string('c5_dtlanc', 9);
+            $table->double('c5_pdescab')->default(0);
+            $table->string('c5_blq', 9);
+            $table->string('c5_contra', 90);
+            $table->double('c5_vlr_frt')->default(0);
+            $table->string('c5_mdcontr', 95);
+            $table->string('c5_mdnumed', 9);
+            $table->string('c5_gerawms', 9);
+            $table->string('c5_mdplani', 9);
+            $table->string('c5_solfre', 9);
+            $table->string('c5_fecent', 9);
+            $table->string('c5_solopc', 9);
+            $table->string('c5_catpv', 9);
+            $table->string('c5_orcres', 9);
+            $table->string('c5_estpres', 9);
+            $table->string('c5_canje', 9);
+            $table->string('c5_sugent', 9);
+            $table->string('c5_provent', 9);
+            $table->string('c5_origem', 95);
+            $table->string('c5_nument', 9);
+            $table->string('c5_coded', 95);
+            $table->string('c5_numpr', 95);
+            $table->string('c5_veiculo', 9);
+            $table->string('c5_liqprod', 9);
+            $table->string('c5_codemb', 9);
+            $table->string('c5_remctr', 95);
+            $table->string('c5_remrev', 9);
+            $table->string('c5_idioma', 9);
+            $table->string('c5_incoter', 95);
+            $table->string('c5_ecsedex', 93);
+            $table->string('c5_ecvincu', 9);
+            $table->string('c5_dttxref', 9);
+            $table->double('c5_txref')->default(0);
+            $table->string('c5_permiss', 96);
+            $table->string('c5_paisent', 9);
+            $table->string('c5_tpvent', 9);
+            $table->double('c5_moedtit')->default(0);
+            $table->string('c5_pedecom', 90);
+            $table->string('c5_rastr', 90);
+            $table->string('c5_status', 9);
+            $table->string('c5_fechse', 9);
+            $table->string('c5_codsaf', 95);
+            $table->string('c5_trcnum', 95);
+            $table->string('c5_msblql', 9);
+            $table->string('c5_ecpresn', 9);
+            $table->string('c5_voltaps', 9);
+            $table->string('c5_fecdse', 9);
+            $table->string('c5_filgct', 9);
+            $table->string('c5_prepemb', 9);
+            $table->string('c5_sdoc', 9);
+            $table->string('c5_sdocsub', 9);
+            $table->string('d_e_l_e_t_', 9);
+            $table->bigInteger('r_e_c_n_o_')->primary();
+            $table->bigInteger('r_e_c_d_e_l_');
+            $table->string('c5_xobs', 900);
+            $table->string('c5_xexp', 9);
+            $table->string('c5_coment', 954);
+            $table->string('c5_numext', 96);
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('sc5010');
+    }
+};
