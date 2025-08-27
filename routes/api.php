@@ -11,8 +11,9 @@ use App\Http\Controllers\ProcessOrderController;
 use App\Http\Controllers\SB1Controller;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/orders/create', [ProcessOrderController::class, 'createOrder']);
-
+Route::post('create-order', [ProcessOrderController::class, 'createOrder']);
+Route::put('/update-order/{orderNumber}', [ProcessOrderController::class, 'updateOrder']);
+Route::put('/update-order-item/{orderNumber}/{item}', [ProcessOrderController::class, 'updateOrderItem']);
 //tablas consultas
 Route::get('/json/{nombre}', [JsonController::class, 'show']);
 Route::put('/json/{nombre}', [JsonController::class, 'update']);
