@@ -21,7 +21,6 @@ class SB1Controller extends Controller
         $resultados = DB::connection('ocr_capyc_vendedores')
             ->table('sb1010')
             ->whereRaw('UPPER(TRIM(b1_cod)) ILIKE ?', ['%' . strtoupper(trim($codigo)) . '%'])
-            ->orWhereRaw('UPPER(TRIM(b1_xcenvli)) ILIKE ?', ['%' . strtoupper(trim($codigo)) . '%'])
             ->orWhereRaw('UPPER(TRIM(b1_xcodcli)) ILIKE ?', ['%' . strtoupper(trim($codigo)) . '%'])
             ->orderBy('b1_cod', 'ASC')
             ->get();
