@@ -11,17 +11,27 @@ class SC5010Controller extends Controller
     {
         $query = Sc5010::query();
 
-        if ($request->has('fecha_desde')) {
-            $query->where('c5_emissao', '>=', $request->fecha_desde);
+        if ($request->filled('fecha_desde')) {
+            $query->where('c5_emissao', '>=', $request->input('fecha_desde'));
         }
-        if ($request->has('fecha_hasta')) {
-            $query->where('c5_emissao', '<=', $request->fecha_hasta);
+
+        if ($request->filled('fecha_hasta')) {
+            $query->where('c5_emissao', '<=', $request->input('fecha_hasta'));
         }
 
         $limit = $request->input('limit', 10);
-        $data  = $query->paginate($limit);
 
-        return response()->json(['data' => $data->items(), 'total' => $data->total(), 'per_page' => $limit], 200);
+        $data = $query
+            ->orderBy('c5_emissao', 'desc') // orden opcional
+            ->paginate($limit);
+
+        return response()->json([
+            'data'         => $data->items(),
+            'total'        => $data->total(),
+            'per_page'     => $data->perPage(),
+            'current_page' => $data->currentPage(),
+            'last_page'    => $data->lastPage(),
+        ], 200);
     }
 
     public function store(Request $request)
