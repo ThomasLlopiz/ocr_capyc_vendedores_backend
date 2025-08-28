@@ -11,11 +11,24 @@ class SC6010Controller extends Controller
     {
         $query = Sc6010::query();
 
+        // Filtrar por número de pedido si viene en el request
         if ($request->has('c6_num')) {
             $query->where('c6_num', $request->c6_num);
         }
 
-        return response()->json(['data' => $query->get()], 200);
+        // Solo artículos no eliminados y sin filial
+        $query->where(function ($q) {
+            $q->whereNull('c6_filial')
+                ->orWhere('c6_filial', '');
+        })->where(function ($q) {
+            $q->whereNull('d_e_l_e_t_')
+                ->orWhere('d_e_l_e_t_', '');
+        });
+
+        // Retornamos los datos ordenados por item
+        return response()->json([
+            'data' => $query->orderBy('c6_item')->get(),
+        ], 200);
     }
 
     public function store(Request $request)
