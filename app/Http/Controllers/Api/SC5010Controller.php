@@ -11,6 +11,10 @@ class SC5010Controller extends Controller
     {
         $query = Sc5010::query();
 
+        if ($request->filled('c5_num')) {
+            $query->where('c5_num', $request->input('c5_num'));
+        }
+
         if ($request->filled('fecha_desde')) {
             $query->where('c5_emissao', '>=', $request->input('fecha_desde'));
         }
@@ -19,10 +23,19 @@ class SC5010Controller extends Controller
             $query->where('c5_emissao', '<=', $request->input('fecha_hasta'));
         }
 
+        $query->where('r_e_c_d_e_l_', 0);
+
         $limit = $request->input('limit', 10);
 
+        \Log::info('Fetching pedidos', [
+            'c5_num'      => $request->input('c5_num'),
+            'fecha_desde' => $request->input('fecha_desde'),
+            'fecha_hasta' => $request->input('fecha_hasta'),
+            'limit'       => $limit,
+        ]);
+
         $data = $query
-            ->orderBy('c5_emissao', 'desc') // orden opcional
+            ->orderBy('c5_emissao', 'desc')
             ->paginate($limit);
 
         return response()->json([
