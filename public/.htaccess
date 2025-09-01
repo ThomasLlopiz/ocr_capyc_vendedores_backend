@@ -4,6 +4,7 @@
     </IfModule>
 
     RewriteEngine On
+    RewriteBase /ocr-backend
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
