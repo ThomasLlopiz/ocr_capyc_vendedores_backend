@@ -20,7 +20,7 @@ Route::put('/json/{nombre}', [JsonController::class, 'update']);
 Route::post('/buscar-codigo', [SB1Controller::class, 'buscarCodigo']);
 
 //tablas API
-Route::get('da0_datate', [DA0DatateController::class, 'index']);
+Route::get('/da0_datate', [DA0DatateController::class, 'index']);
 Route::apiResource('sc5010', SC5010Controller::class);
 Route::apiResource('sc6010', SC6010Controller::class);
 Route::get('/users', [AuthController::class, 'index'])->middleware('auth:sanctum');
