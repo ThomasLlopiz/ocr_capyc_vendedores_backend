@@ -10,23 +10,17 @@ class DA0DatateController extends Controller
     public function index()
     {
         try {
-            // Consultar da1010 para obtener da1_codtab vigentes
-            $tablas = DB::table('da1010')
-                ->whereNotNull('da1_datini')                      // Vigencia inicio no nulo
-                ->where('da1_datini', '<=', now()->format('Ymd')) // Vigente hoy
+            $tablas = DB::table('da0010')
                 ->where(function ($query) {
-                    $query->whereNull('da1_datfim')                      // Sin fecha de fin
-                        ->orWhere('da1_datfim', '>=', now()->format('Ymd')); // O fin posterior
+                    $query->whereNull('da0_datate')
+                        ->orWhereRaw("TRIM(da0_datate) = ''")
+                        ->orWhere('da0_datate', '>', now());
                 })
-                ->select('da1_codtab')
-                ->distinct()
-                ->orderBy('da1_codtab')
-                ->get()
-                ->pluck('da1_codtab')
-                ->toArray();
+                ->select(DB::raw("CONCAT(TRIM(da0_codtab), '-', TRIM(da0_descri)) AS tabla"))
+                ->pluck('tabla');
 
-            Log::info("Tablas obtenidas de da1010", ['tablas' => $tablas]);
-            return response()->json(['data' => $tablas], 200);
+            return response()->json($tablas, 200);
+
         } catch (\Exception $e) {
             Log::error("Error en DA0DatateController: " . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
