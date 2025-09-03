@@ -1,8 +1,10 @@
 <?php
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;       // Agregar esta importación al inicio del archivo
-use Illuminate\Support\Facades\DB; // Agregar esta importación al inicio del archivo
+use Illuminate\Http\Request; // Agregar esta importación al inicio del archivo
+use Illuminate\Support\Facades\DB;
+
+// Agregar esta importación al inicio del archivo
 
 class ProcessOrderController extends Controller
 {
@@ -12,6 +14,7 @@ class ProcessOrderController extends Controller
         $store      = $request->input('store');
         $filial     = $request->input('filial');
         $articulos  = $request->input('articulos', []);
+        $ocCliente  = $request->input('oc_cliente', '');
 
         if (! $filial) {
             return response()->json(['error' => 'Filial is required'], 400);
@@ -40,10 +43,11 @@ class ProcessOrderController extends Controller
                 'c5_client'    => $client->a1_cod,
                 'c5_lojaent'   => $client->a1_loja,
                 'c5_xnomcli'   => $client->a1_nome,
+
                 'c5_naturez'   => '',
                 'c5_tipocli'   => $client->a1_tipo,
                 'c5_condpag'   => $client->a1_cond,
-                'c5_xoccli'    => '',
+                'c5_xoccli'    => $ocCliente,
                 'c5_tabela'    => '',
                 'c5_vend1'     => $client->a1_vend,
                 'c5_comis1'    => 0,
@@ -131,7 +135,7 @@ class ProcessOrderController extends Controller
                     'c6_xconv'   => $product->b1_conv,
                     'c6_xcenvli' => $product->b1_xcenvli ?? '',
                     'c6_xcodcli' => $product->b1_xcodcli ?? '',
-                    'c6_xoccli'  => '',
+                    'c6_xoccli'  => $ocCliente,
                 ];
                 DB::table('sc6010')->insert($sc6Data);
                 $sc6DataList[] = $sc6Data;
