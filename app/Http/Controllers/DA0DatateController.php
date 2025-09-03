@@ -1,7 +1,6 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -11,14 +10,19 @@ class DA0DatateController extends Controller
     {
         try {
             $tablas = DB::table('da0010')
-                ->where(function ($query) {
-                    $query->whereNull('da0_datate')
-                        ->orWhereRaw("TRIM(da0_datate) = ''")
-                        ->orWhere('da0_datate', '>', now());
+                ->select('da0_codtab', 'da0_descri')
+                ->orderBy('da0_codtab', 'ASC')
+                ->get()
+                ->map(function ($tabla) {
+                    return [
+                        'codtab' => trim($tabla->da0_codtab ?? ''),
+                        'descri' => trim($tabla->da0_descri ?? ''),
+                    ];
                 })
-                ->select(DB::raw("CONCAT(TRIM(da0_codtab), '-', TRIM(da0_descri)) AS tabla"))
-                ->pluck('tabla');
+                ->values()
+                ->toArray();
 
+            Log::info('Tablas enviadas a la API: ' . json_encode($tablas));
             return response()->json($tablas, 200);
 
         } catch (\Exception $e) {
