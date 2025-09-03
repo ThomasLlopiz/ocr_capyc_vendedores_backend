@@ -7,22 +7,23 @@ use App\Http\Controllers\Api\SC5010Controller;
 use App\Http\Controllers\Api\SC6010Controller;
 use App\Http\Controllers\Api\VerificationController;
 use App\Http\Controllers\DA0DatateController;
+use App\Http\Controllers\PrecioController;
 use App\Http\Controllers\ProcessOrderController;
 use App\Http\Controllers\SB1Controller;
 use Illuminate\Support\Facades\Route;
-
+//tablas postgres
 Route::post('create-order', [ProcessOrderController::class, 'createOrder']);
 Route::put('/update-order/{orderNumber}', [ProcessOrderController::class, 'updateOrder']);
 Route::put('/update-order-item/{orderNumber}/{item}', [ProcessOrderController::class, 'updateOrderItem']);
-//tablas consultas
 Route::get('/json/{nombre}', [JsonController::class, 'show']);
 Route::put('/json/{nombre}', [JsonController::class, 'update']);
 Route::post('/buscar-codigo', [SB1Controller::class, 'buscarCodigo']);
-
-//tablas API
+Route::post('/buscar-precio', [PrecioController::class, 'buscarPrecio']);
 Route::get('/da0_datate', [DA0DatateController::class, 'index']);
 Route::apiResource('sc5010', SC5010Controller::class);
 Route::apiResource('sc6010', SC6010Controller::class);
+
+//tablas API
 Route::get('/users', [AuthController::class, 'index'])->middleware('auth:sanctum');
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
