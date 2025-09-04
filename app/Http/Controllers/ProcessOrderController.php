@@ -206,13 +206,17 @@ class ProcessOrderController extends Controller
         $data = $request->only([
             'c6_entreg', 'c6_xoccli', 'c6_prunit', 'c6_prcven', 'c6_valor', 'c6_qtdven',
         ]);
+        $data['c6_entreg'] = $data['c6_entreg'] ?? 0;
 
         try {
             $filial = $request->input('filial', '');
-            if (! $filial) {
-                return response()->json(['error' => 'Filial is required'], 400);
-            }
+            $filial = $request->input('filial');
 
+            if (! $filial) {
+                $filial = DB::table('sc6010')
+                    ->where('c6_num', $orderNumber)
+                    ->value('c6_filial');
+            }
             \Log::info("Iniciando actualización de ítem SC6010", [
                 'orderNumber' => $orderNumber,
                 'item'        => $item,
