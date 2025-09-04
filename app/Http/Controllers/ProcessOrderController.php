@@ -1,10 +1,8 @@
 <?php
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request; // Agregar esta importación al inicio del archivo
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
-// Agregar esta importación al inicio del archivo
 
 class ProcessOrderController extends Controller
 {
@@ -43,7 +41,6 @@ class ProcessOrderController extends Controller
                 'c5_client'    => $client->a1_cod,
                 'c5_lojaent'   => $client->a1_loja,
                 'c5_xnomcli'   => $client->a1_nome,
-
                 'c5_naturez'   => '',
                 'c5_tipocli'   => $client->a1_tipo,
                 'c5_condpag'   => $client->a1_cond,
@@ -79,7 +76,6 @@ class ProcessOrderController extends Controller
                 $productCode = $articulo['product_code'];
                 $quantity    = $articulo['quantity'];
 
-                // Validar cantidad
                 if ($quantity <= 0 || $quantity > 1000000) {
                     \Log::warning("Cantidad inválida para {$productCode}: {$quantity}, usando 1");
                     $quantity = 1;
@@ -90,7 +86,7 @@ class ProcessOrderController extends Controller
                         $query->whereRaw("TRIM(b1_cod) = ?", [$productCode])
                             ->orWhereRaw("TRIM(b1_xcodcli) = ?", [$productCode]);
                     })
-                    ->where('b1_msblql', '<>', 1) // 👈 EXCLUYE PRODUCTOS BLOQUEADOS
+                    ->where('b1_msblql', '<>', 1)
                     ->first();
                 if (! $product) {
                     throw new \Exception("Product not found for code: {$productCode}");
@@ -174,10 +170,9 @@ class ProcessOrderController extends Controller
     }
     private function generateOrderNumber($filial)
     {
-        // Generate unique c5_num for c5_filial, considering r_e_c_d_e_l_
         $lastOrder = DB::table('sc5010')
             ->where('c5_filial', $filial)
-            ->where('r_e_c_d_e_l_', 0) // Considerar solo registros no eliminados
+            ->where('r_e_c_d_e_l_', 0)
             ->max('c5_num');
         return $lastOrder ? str_pad((int) $lastOrder + 1, 6, '0', STR_PAD_LEFT) : '000001';
     }
