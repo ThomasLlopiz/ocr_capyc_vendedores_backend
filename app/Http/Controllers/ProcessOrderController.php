@@ -86,8 +86,11 @@ class ProcessOrderController extends Controller
                 }
 
                 $product = DB::table('sb1010')
-                    ->whereRaw("TRIM(b1_cod) = ?", [$productCode])
-                    ->orWhereRaw("TRIM(b1_xcodcli) = ?", [$productCode])
+                    ->where(function ($query) use ($productCode) {
+                        $query->whereRaw("TRIM(b1_cod) = ?", [$productCode])
+                            ->orWhereRaw("TRIM(b1_xcodcli) = ?", [$productCode]);
+                    })
+                    ->where('b1_msblql', '<>', 1) // 👈 EXCLUYE PRODUCTOS BLOQUEADOS
                     ->first();
                 if (! $product) {
                     throw new \Exception("Product not found for code: {$productCode}");

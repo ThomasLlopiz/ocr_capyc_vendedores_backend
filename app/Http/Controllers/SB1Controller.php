@@ -20,8 +20,11 @@ class SB1Controller extends Controller
         // Buscar coincidencias en las 3 columnas usando ILIKE para PostgreSQL
         $resultados = DB::connection('ocr_capyc_vendedores')
             ->table('sb1010')
-            ->whereRaw('UPPER(TRIM(b1_cod)) ILIKE ?', ['%' . strtoupper(trim($codigo)) . '%'])
-            ->orWhereRaw('UPPER(TRIM(b1_xcodcli)) ILIKE ?', ['%' . strtoupper(trim($codigo)) . '%'])
+            ->where(function ($query) use ($codigo) {
+                $query->whereRaw('UPPER(TRIM(b1_cod)) ILIKE ?', ['%' . strtoupper(trim($codigo)) . '%'])
+                    ->orWhereRaw('UPPER(TRIM(b1_xcodcli)) ILIKE ?', ['%' . strtoupper(trim($codigo)) . '%']);
+            })
+            ->where('b1_msblql', '!=', 1)
             ->orderBy('b1_cod', 'ASC')
             ->get();
 
