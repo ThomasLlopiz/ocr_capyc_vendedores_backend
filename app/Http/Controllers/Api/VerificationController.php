@@ -22,13 +22,13 @@ class VerificationController extends Controller
 
         if ($user->hasVerifiedEmail()) {
             Log::info('Email already verified', ['id' => $id]);
-            return response()->json(['message' => 'El correo ya está verificado.'], 200);
+            return redirect('http://localhost:8500?verified=true');
         }
 
         if ($user->markEmailAsVerified()) {
             event(new Verified($user));
             Log::info('Email verified successfully', ['id' => $id]);
-            return response()->json(['message' => 'Correo verificado exitosamente.'], 200);
+            return redirect('http://localhost:8500?verified=true');
         }
 
         Log::error('Failed to verify email', ['id' => $id]);
