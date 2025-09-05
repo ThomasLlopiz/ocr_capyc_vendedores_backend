@@ -247,18 +247,16 @@ class ProcessOrderController extends Controller
         $data = $request->only([
             'c6_entreg', 'c6_xoccli', 'c6_prunit', 'c6_prcven', 'c6_valor', 'c6_qtdven',
         ]);
+
+        // Si no viene fecha de entrega, usamos la fecha actual
         if (empty($data['c6_entreg'])) {
             $data['c6_entreg'] = now()->format('Ymd');
-        }
-        if (empty($data['c5_naturez'])) {
-            return response()->json([
-                'error' => 'El campo c5_naturez es obligatorio',
-            ], 422);
         }
 
         try {
             $filial = $request->input('filial', '');
 
+            // Si no llega filial, la buscamos desde sc6010
             if (! $filial) {
                 $filial = DB::table('sc6010')
                     ->where('c6_num', $orderNumber)
@@ -283,11 +281,12 @@ class ProcessOrderController extends Controller
                     'orderNumber' => $orderNumber,
                     'item'        => $item,
                     'filial'      => $filial,
+                    'data'        => $data,
                 ]);
                 return response()->json(['error' => 'No se encontró el ítem para actualizar'], 404);
             }
 
-            \Log::info("Actualización de ítem SC6010 completada", [
+            \Log::info("✅ Actualización de ítem SC6010 completada", [
                 'orderNumber' => $orderNumber,
                 'item'        => $item,
                 'filial'      => $filial,
@@ -296,7 +295,7 @@ class ProcessOrderController extends Controller
 
             return response()->json(['message' => 'Order item updated successfully'], 200);
         } catch (\Exception $e) {
-            \Log::error("Error al actualizar ítem SC6010", [
+            \Log::error("❌ Error al actualizar ítem SC6010", [
                 'orderNumber' => $orderNumber,
                 'item'        => $item,
                 'error'       => $e->getMessage(),
