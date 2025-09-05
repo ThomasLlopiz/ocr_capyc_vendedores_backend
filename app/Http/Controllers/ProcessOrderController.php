@@ -185,19 +185,60 @@ class ProcessOrderController extends Controller
         ]);
 
         try {
+            // Log de inicio
+            \Log::info("🔹 [updateOrder] Iniciando actualización de SC5010", [
+                'orderNumber'  => $orderNumber,
+                'request_data' => $data,
+            ]);
+
+            // Obtenemos filial
             $filial = $request->input('filial', '');
             if (! $filial) {
+                \Log::warning("⚠️ [updateOrder] Falta filial", [
+                    'orderNumber' => $orderNumber,
+                    'data'        => $data,
+                ]);
+
                 return response()->json(['error' => 'Filial is required'], 400);
             }
 
-            DB::table('sc5010')
+            // Ejecutamos actualización
+            $affected = DB::table('sc5010')
                 ->where('c5_num', $orderNumber)
                 ->where('c5_filial', $filial)
                 ->update($data);
 
+            // Verificamos si realmente actualizó algo
+            if ($affected === 0) {
+                \Log::warning("⚠️ [updateOrder] No se actualizó ningún registro en SC5010", [
+                    'orderNumber' => $orderNumber,
+                    'filial'      => $filial,
+                    'data'        => $data,
+                ]);
+
+                return response()->json(['error' => 'No se encontró el pedido para actualizar'], 404);
+            }
+
+            // Log final OK
+            \Log::info("✅ [updateOrder] Pedido actualizado correctamente", [
+                'orderNumber'  => $orderNumber,
+                'filial'       => $filial,
+                'updated_data' => $data,
+            ]);
+
             return response()->json(['message' => 'Order updated successfully'], 200);
+
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to update order: ' . $e->getMessage()], 500);
+            // Log error
+            \Log::error("❌ [updateOrder] Error al actualizar pedido", [
+                'orderNumber' => $orderNumber,
+                'error'       => $e->getMessage(),
+                'trace'       => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to update order: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -206,17 +247,24 @@ class ProcessOrderController extends Controller
         $data = $request->only([
             'c6_entreg', 'c6_xoccli', 'c6_prunit', 'c6_prcven', 'c6_valor', 'c6_qtdven',
         ]);
-        $data['c6_entreg'] = $data['c6_entreg'] ?? 0;
+        if (empty($data['c6_entreg'])) {
+            $data['c6_entreg'] = now()->format('Ymd');
+        }
+        if (empty($data['c5_naturez'])) {
+            return response()->json([
+                'error' => 'El campo c5_naturez es obligatorio',
+            ], 422);
+        }
 
         try {
             $filial = $request->input('filial', '');
-            $filial = $request->input('filial');
 
             if (! $filial) {
                 $filial = DB::table('sc6010')
                     ->where('c6_num', $orderNumber)
                     ->value('c6_filial');
             }
+
             \Log::info("Iniciando actualización de ítem SC6010", [
                 'orderNumber' => $orderNumber,
                 'item'        => $item,
@@ -256,4 +304,5 @@ class ProcessOrderController extends Controller
             return response()->json(['error' => 'Failed to update order item: ' . $e->getMessage()], 500);
         }
     }
+
 }
