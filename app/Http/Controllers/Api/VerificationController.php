@@ -15,20 +15,22 @@ class VerificationController extends Controller
 
         $user = User::findOrFail($id);
 
+        // Validar hash
         if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
             Log::warning('Invalid verification hash', ['id' => $id]);
             return response()->json(['message' => 'Enlace de verificación inválido.'], 403);
         }
 
+        // Si ya estaba verificado, igual redirigimos al frontend
         if ($user->hasVerifiedEmail()) {
-            Log::info('Email already verified', ['id' => $id]);
-            return redirect('http://localhost:8500?verified=true');
+            return redirect($request->query('redirect', env('FRONTEND_URL') . '/login'));
         }
 
+        // Si no estaba verificado, lo marcamos como verificado
         if ($user->markEmailAsVerified()) {
             event(new Verified($user));
             Log::info('Email verified successfully', ['id' => $id]);
-            return redirect('http://localhost:8500?verified=true');
+            return redirect($request->query('redirect', env('FRONTEND_URL') . '/login'));
         }
 
         Log::error('Failed to verify email', ['id' => $id]);
