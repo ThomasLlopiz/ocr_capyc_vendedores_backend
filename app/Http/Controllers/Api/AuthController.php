@@ -97,9 +97,26 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
+        // Verificar si el email existe
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'email' => ['No existe este email en la base de datos'],
+            ]);
+        }
+
+        // Verificar si el email está verificado
+        if (! $user->email_verified_at) {
+            throw ValidationException::withMessages([
+                'email' => ['Email no verificado. Por favor, verifica tu email'],
+            ]);
+        }
+
+        // Intentar autenticar
         if (! Auth::attempt($request->only(['email', 'password']))) {
             throw ValidationException::withMessages([
-                'email' => ['Credenciales inválidas'],
+                'email' => ['Contraseña incorrecta'],
             ]);
         }
 
@@ -138,14 +155,37 @@ class AuthController extends Controller
 
     public function delete(Request $request)
     {
-        $user = $request->user();
-        $user->delete();
+        Log::info('Delete user endpoint hit', ['request' => $request->all()]);
+
+        $request->validate([
+            'email' => 'required|string|email|exists:users,email',
+        ], [
+            'email.required' => 'El correo es obligatorio.',
+            'email.email'    => 'El correo debe ser una dirección válida.',
+            'email.exists'   => 'El correo no existe en la base de datos.',
+        ]);
+
+        $authenticatedUser = $request->user();
+        $targetUser        = User::where('email', $request->email)->first();
+
+        if ($authenticatedUser->email === $request->email) {
+            throw ValidationException::withMessages([
+                'email' => ['No puedes eliminar tu propio usuario.'],
+            ]);
+        }
+
+        if ($targetUser->role === 'admin') {
+            throw ValidationException::withMessages([
+                'email' => ['No se puede eliminar un administrador.'],
+            ]);
+        }
+
+        $targetUser->delete();
 
         return response()->json([
             'message' => 'Usuario eliminado exitosamente',
-        ], 204);
+        ], 200);
     }
-
     public function forgotPassword(Request $request)
     {
         $request->validate([

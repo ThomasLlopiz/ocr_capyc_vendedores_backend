@@ -10,7 +10,7 @@ class CustomVerificationEmail extends Notification
     {
         // Generamos la URL de verificación en Laravel
         $url = url('/api/email/verify/' . $notifiable->getKey() . '/' . sha1($notifiable->getEmailForVerification()) .
-            '?redirect=' . urlencode('http://127.0.0.1:8500/notificacion'));
+            '?redirect=' . urlencode('http://127.0.0.1:8500/login'));
 
         return (new MailMessage)
             ->subject('Verifica tu dirección de correo electrónico')
