@@ -11,6 +11,7 @@ use App\Http\Controllers\PrecioController;
 use App\Http\Controllers\ProcessOrderController;
 use App\Http\Controllers\SB1Controller;
 use Illuminate\Support\Facades\Route;
+
 //tablas postgres
 Route::post('create-order', [ProcessOrderController::class, 'createOrder']);
 Route::put('/update-order/{orderNumber}', [ProcessOrderController::class, 'updateOrder']);
@@ -24,7 +25,6 @@ Route::apiResource('sc5010', SC5010Controller::class);
 Route::apiResource('sc6010', SC6010Controller::class);
 
 //tablas API
-Route::get('/users', [AuthController::class, 'index'])->middleware('auth:sanctum');
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
@@ -39,14 +39,14 @@ Route::post('/email/verification-notification', [VerificationController::class, 
 //tablas verificadas
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/users', [AuthController::class, 'index']);
     Route::put('/user', [AuthController::class, 'update']);
     Route::delete('/user', [AuthController::class, 'delete']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+    Route::get('/empresas', [EmpresaController::class, 'index']);
     Route::post('/empresas', [EmpresaController::class, 'store']);
     Route::get('/empresas/{id}', [EmpresaController::class, 'show']);
     Route::put('/empresas/{id}', [EmpresaController::class, 'update']);
     Route::delete('/empresas/{id}', [EmpresaController::class, 'destroy']);
 });
-
-Route::get('/empresas', [EmpresaController::class, 'index']);
