@@ -45,9 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/user', [AuthController::class, 'delete']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
-    Route::get('/empresas', [EmpresaController::class, 'index']);
-    Route::post('/empresas', [EmpresaController::class, 'store']);
-    Route::get('/empresas/{id}', [EmpresaController::class, 'show']);
-    Route::put('/empresas/{id}', [EmpresaController::class, 'update']);
-    Route::delete('/empresas/{id}', [EmpresaController::class, 'destroy']);
+
 });
+    Route::get('/empresas', [EmpresaController::class, 'index']);
+    Route::match(['get', 'post'], '/empresas/buscar', [EmpresaController::class, 'buscarCodigo']);
