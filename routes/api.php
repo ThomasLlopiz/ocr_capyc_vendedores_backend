@@ -47,5 +47,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 });
-    Route::get('/empresas', [EmpresaController::class, 'index']);
-    Route::match(['get', 'post'], '/empresas/buscar', [EmpresaController::class, 'buscarCodigo']);
+Route::get('/empresas', [EmpresaController::class, 'index']);
+Route::match(['get', 'post'], '/empresas/buscar', [EmpresaController::class, 'buscarCodigo']);
+Route::post('/empresas/buscar-nombre', [EmpresaController::class, 'buscarPorNombre']);
