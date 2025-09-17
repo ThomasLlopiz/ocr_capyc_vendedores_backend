@@ -147,6 +147,7 @@ class Sc5010 extends Model
         'c5_xexp',
         'c5_coment',
         'c5_numext',
+        'estado_ocs',
     ];
 
     protected $casts = [

@@ -147,6 +147,7 @@ return new class extends Migration
             $table->string('c5_xexp', 9);
             $table->string('c5_coment', 954);
             $table->string('c5_numext', 96);
+            $table->unsignedTinyInteger('estado_ocs')->default(0);
             $table->timestamps();
         });
     }
