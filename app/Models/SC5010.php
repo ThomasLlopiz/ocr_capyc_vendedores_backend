@@ -7,8 +7,9 @@ class Sc5010 extends Model
 {
     protected $table      = 'sc5010';
     protected $primaryKey = 'r_e_c_n_o_';
-    public $incrementing  = false;
-    public $timestamps    = true;
+    public $incrementing  = false; // si r_e_c_n_o_ no es autoincremental
+    protected $keyType    = 'int'; // o 'string' según corresponda
+    public $timestamps    = false;
 
     protected $fillable = [
         'c5_filial',
