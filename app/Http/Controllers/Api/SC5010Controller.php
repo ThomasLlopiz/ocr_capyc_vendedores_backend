@@ -338,6 +338,7 @@ class SC5010Controller extends Controller
             'c5_xexp'      => 'string|max:9',
             'c5_coment'    => 'string|max:954',
             'c5_numext'    => 'string|max:96',
+            'estado_ocs'   => 'integer|min:0|max:9',
         ]);
 
         $sc5010->update($data);

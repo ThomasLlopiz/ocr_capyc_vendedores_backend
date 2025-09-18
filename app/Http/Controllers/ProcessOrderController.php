@@ -179,67 +179,46 @@ class ProcessOrderController extends Controller
 
     public function updateOrder(Request $request, $orderNumber)
     {
-        $data = $request->only([
-            'c5_naturez', 'c5_xoccli', 'c5_tabela', 'c5_moeda',
-            'c5_tiplib', 'c5_docger', 'c5_xobs',
+        \Log::info('🔹 [updateOrder] Iniciando actualización de SC5010', [
+            'orderNumber'  => $orderNumber,
+            'request_data' => $request->all(),
         ]);
 
-        try {
-            // Log de inicio
-            \Log::info("🔹 [updateOrder] Iniciando actualización de SC5010", [
-                'orderNumber'  => $orderNumber,
-                'request_data' => $data,
-            ]);
+        // 1) Traer filial del body (aceptá "filial" o "c5_filial")
+        $filial = $request->input('filial') ?? $request->input('c5_filial');
 
-            // Obtenemos filial
-            $filial = $request->input('filial', '');
-            if (! $filial) {
-                \Log::warning("⚠️ [updateOrder] Falta filial", [
-                    'orderNumber' => $orderNumber,
-                    'data'        => $data,
-                ]);
-
-                return response()->json(['error' => 'Filial is required'], 400);
+        // 2) Si no vino en el body, intentarlo desde DB por c5_num
+        if (! $filial) {
+            $row = \App\Models\Sc5010::where('c5_num', $orderNumber)->first();
+            if ($row) {
+                $filial = $row->c5_filial;
             }
-
-            // Ejecutamos actualización
-            $affected = DB::table('sc5010')
-                ->where('c5_num', $orderNumber)
-                ->where('c5_filial', $filial)
-                ->update($data);
-
-            // Verificamos si realmente actualizó algo
-            if ($affected === 0) {
-                \Log::warning("⚠️ [updateOrder] No se actualizó ningún registro en SC5010", [
-                    'orderNumber' => $orderNumber,
-                    'filial'      => $filial,
-                    'data'        => $data,
-                ]);
-
-                return response()->json(['error' => 'No se encontró el pedido para actualizar'], 404);
-            }
-
-            // Log final OK
-            \Log::info("✅ [updateOrder] Pedido actualizado correctamente", [
-                'orderNumber'  => $orderNumber,
-                'filial'       => $filial,
-                'updated_data' => $data,
-            ]);
-
-            return response()->json(['message' => 'Order updated successfully'], 200);
-
-        } catch (\Exception $e) {
-            // Log error
-            \Log::error("❌ [updateOrder] Error al actualizar pedido", [
-                'orderNumber' => $orderNumber,
-                'error'       => $e->getMessage(),
-                'trace'       => $e->getTraceAsString(),
-            ]);
-
-            return response()->json([
-                'error' => 'Failed to update order: ' . $e->getMessage(),
-            ], 500);
         }
+
+        if (! $filial) {
+            \Log::warning('⚠️ [updateOrder] Falta filial', [
+                'orderNumber' => $orderNumber,
+                'data'        => $request->all(),
+            ]);
+            return response()->json(['message' => 'Filial requerida'], 422);
+        }
+
+        // 3) Buscar por clave compuesta
+        $sc5010 = \App\Models\Sc5010::where('c5_num', $orderNumber)
+            ->where('c5_filial', $filial)
+            ->firstOrFail();
+
+        // 4) Validar y actualizar (permití estado_ocs)
+        $payload = $request->validate([
+            'estado_ocs' => 'integer|min:0|max:9',
+        ]);
+
+        $sc5010->update($payload);
+
+        return response()->json([
+            'message' => 'Order updated successfully',
+            'data'    => $sc5010,
+        ], 200);
     }
 
     public function updateOrderItem(Request $request, $orderNumber, $item)
