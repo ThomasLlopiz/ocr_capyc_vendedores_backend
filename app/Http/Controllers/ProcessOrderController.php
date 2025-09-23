@@ -48,7 +48,7 @@ class ProcessOrderController extends Controller
                 'c5_tabela'    => '',
                 'c5_vend1'     => $client->a1_vend,
                 'c5_comis1'    => 0,
-                'c5_emissao'   => now()->format('Ymd'),
+                'c5_emissao'   => now()->format('Ymd'), // emisión = hoy
                 'c5_moeda'     => '1',
                 'c5_mennota'   => '',
                 'c5_tiplib'    => '',
@@ -99,7 +99,11 @@ class ProcessOrderController extends Controller
 
                 $sc6Recno = DB::table('sc6010')->max('r_e_c_n_o_') + 1;
                 $boxes    = $product->b1_conv ? ceil($quantity / $product->b1_conv) : 0;
-                $sc6Data  = [
+
+                                                                // >>>>> CAMBIO: fecha base = hoy + 30 días
+                $futureYmd = now()->addDays(30)->format('Ymd'); // ⬅️  hoy + 30
+
+                $sc6Data = [
                     'c6_filial'  => $filial,
                     'c6_item'    => str_pad($itemNumber, 2, '0', STR_PAD_LEFT),
                     'c6_produto' => $product->b1_cod,
@@ -114,7 +118,7 @@ class ProcessOrderController extends Controller
                     'c6_local'   => $product->b1_locpad,
                     'c6_cf'      => '612',
                     'c6_cli'     => $client->a1_cod,
-                    'c6_entreg'  => '',
+                    'c6_entreg'  => $futureYmd, // ⬅️ antes: ''  | ahora: hoy + 30
                     'c6_loja'    => $store,
                     'c6_num'     => $orderNumber,
                     'c6_prunit'  => $price->da1_prcven ?? 0,
@@ -125,7 +129,7 @@ class ProcessOrderController extends Controller
                     'c6_qtdemp'  => $quantity,
                     'c6_qtdemp2' => $boxes,
                     'c6_mopc'    => null,
-                    'c6_sugentr' => now()->format('Ymd'),
+                    'c6_sugentr' => $futureYmd, // ⬅️ antes: hoy | ahora: hoy + 30
                     'c6_vdobs'   => null,
                     'c6_rateio'  => '2',
                     'c6_tpprod'  => '1',
@@ -168,6 +172,7 @@ class ProcessOrderController extends Controller
             return response()->json(['error' => 'Failed to create order: ' . $e->getMessage()], 500);
         }
     }
+
     private function generateOrderNumber($filial)
     {
         $lastOrder = DB::table('sc5010')
@@ -227,9 +232,9 @@ class ProcessOrderController extends Controller
             'c6_entreg', 'c6_xoccli', 'c6_prunit', 'c6_prcven', 'c6_valor', 'c6_qtdven',
         ]);
 
-        // Si no viene fecha de entrega, usamos la fecha actual
+        // >>>>> CAMBIO: si no viene fecha de entrega, usamos hoy + 30 días
         if (empty($data['c6_entreg'])) {
-            $data['c6_entreg'] = now()->format('Ymd');
+            $data['c6_entreg'] = now()->addDays(30)->format('Ymd'); // ⬅️  hoy + 30
         }
 
         try {
@@ -282,5 +287,4 @@ class ProcessOrderController extends Controller
             return response()->json(['error' => 'Failed to update order item: ' . $e->getMessage()], 500);
         }
     }
-
 }
