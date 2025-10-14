@@ -213,12 +213,31 @@ class ProcessOrderController extends Controller
             ->where('c5_filial', $filial)
             ->firstOrFail();
 
-        // 4) Validar y actualizar (permití estado_ocs)
+        // 4) ✅ Aceptar y validar TODOS los campos que querés actualizar
         $payload = $request->validate([
-            'estado_ocs' => 'integer|min:0|max:9',
+            'estado_ocs' => 'integer|min:0|max:9|nullable',
+            'c5_naturez' => 'string|nullable',
+            'c5_tabela'  => 'string|nullable',
+            'c5_moeda'   => 'string|nullable',
+            'c5_tiplib'  => 'string|nullable',
+            'c5_docger'  => 'string|nullable',
+            'c5_xobs'    => 'string|nullable',
+            'c5_xoccli'  => 'string|nullable',
+            'c5_condpag' => 'string|nullable',
+            'c5_tipocli' => 'string|nullable',
         ]);
 
-        $sc5010->update($payload);
+        // 5) Guardar (si tu modelo tiene $fillable, podés usar fill+save)
+        //    Si no, actualizá directo por query para evitar mass assignment.
+        \DB::table('sc5010')
+            ->where('c5_num', $orderNumber)
+            ->where('c5_filial', $filial)
+            ->update($payload);
+
+        // Refrescar el modelo para devolver datos actualizados
+        $sc5010 = \App\Models\Sc5010::where('c5_num', $orderNumber)
+            ->where('c5_filial', $filial)
+            ->first();
 
         return response()->json([
             'message' => 'Order updated successfully',
