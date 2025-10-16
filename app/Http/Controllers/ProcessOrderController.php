@@ -14,6 +14,13 @@ class ProcessOrderController extends Controller
         $articulos  = $request->input('articulos', []);
         $ocCliente  = $request->input('oc_cliente', '');
 
+        // ⬇️ Encabezado que puede venir del front (clonado del original)
+        $c5_naturez = $request->input('c5_naturez', $request->input('naturez', ''));
+        $c5_moeda   = $request->input('c5_moeda', $request->input('moeda', '1'));
+        $c5_tiplib  = $request->input('c5_tiplib', $request->input('tiplib', ''));
+        $c5_docger  = $request->input('c5_docger', $request->input('docger', ''));
+        $c5_tabela  = $request->input('c5_tabela', $request->input('tabela', ''));
+
         if (! $filial) {
             return response()->json(['error' => 'Filial is required'], 400);
         }
@@ -32,7 +39,9 @@ class ProcessOrderController extends Controller
 
             $orderNumber = $this->generateOrderNumber($filial);
             $sc5Recno    = DB::table('sc5010')->max('r_e_c_n_o_') + 1;
-            $sc5Data     = [
+
+            // ⬇️ Grabo SC5 respetando encabezado del front
+            $sc5Data = [
                 'c5_filial'    => $filial,
                 'c5_num'       => $orderNumber,
                 'c5_tipo'      => 'N',
@@ -41,20 +50,20 @@ class ProcessOrderController extends Controller
                 'c5_client'    => $client->a1_cod,
                 'c5_lojaent'   => $client->a1_loja,
                 'c5_xnomcli'   => $client->a1_nome,
-                'c5_naturez'   => '',
+                'c5_naturez'   => $c5_naturez,
                 'c5_tipocli'   => $client->a1_tipo,
                 'c5_condpag'   => $client->a1_cond,
                 'c5_xoccli'    => $ocCliente,
-                'c5_tabela'    => '',
+                'c5_tabela'    => $c5_tabela,
                 'c5_vend1'     => $client->a1_vend,
                 'c5_comis1'    => 0,
-                'c5_emissao'   => now()->format('Ymd'), // emisión = hoy
-                'c5_moeda'     => '1',
+                'c5_emissao'   => now()->format('Ymd'),
+                'c5_moeda'     => $c5_moeda,
                 'c5_mennota'   => '',
-                'c5_tiplib'    => '',
+                'c5_tiplib'    => $c5_tiplib,
                 'c5_txmoeda'   => '0',
                 'c5_tpcarga'   => '2',
-                'c5_docger'    => '',
+                'c5_docger'    => $c5_docger,
                 'c5_gerawms'   => '1',
                 'c5_solopc'    => '1',
                 'c5_provent'   => $client->a1_est,
@@ -72,6 +81,7 @@ class ProcessOrderController extends Controller
 
             $sc6DataList = [];
             $itemNumber  = 1;
+
             foreach ($articulos as $articulo) {
                 $productCode = $articulo['product_code'];
                 $quantity    = $articulo['quantity'];
@@ -88,20 +98,29 @@ class ProcessOrderController extends Controller
                     })
                     ->where('b1_msblql', '<>', 1)
                     ->first();
+
                 if (! $product) {
                     throw new \Exception("Product not found for code: {$productCode}");
                 }
 
-                $price = DB::table('da1010')
-                    ->where('da1_codpro', $product->b1_cod)
-                    ->where('da1_codtab', '')
-                    ->first();
+                // ⬇️ Si el front mandó precio (c6_prcven/c6_prunit/PrcLista), lo respeto; si no, busco en tabla
+                $overridePrc = $articulo['c6_prcven'] ?? ($articulo['c6_prunit'] ?? ($articulo['PrcLista'] ?? null));
+                if ($overridePrc !== null && $overridePrc !== '') {
+                    $prcven = (float) $overridePrc;
+                } else {
+                    $priceRow = DB::table('da1010')
+                        ->where('da1_codpro', $product->b1_cod)
+                        ->where('da1_codtab', $c5_tabela) // usa la tabla que llegó
+                        ->first();
+                    $prcven = (float) ($priceRow->da1_prcven ?? 0);
+                }
+
+                $valor = $quantity * $prcven;
 
                 $sc6Recno = DB::table('sc6010')->max('r_e_c_n_o_') + 1;
                 $boxes    = $product->b1_conv ? ceil($quantity / $product->b1_conv) : 0;
 
-                                                                // >>>>> CAMBIO: fecha base = hoy + 30 días
-                $futureYmd = now()->addDays(30)->format('Ymd'); // ⬅️  hoy + 30
+                $futureYmd = now()->addDays(30)->format('Ymd');
 
                 $sc6Data = [
                     'c6_filial'  => $filial,
@@ -110,18 +129,18 @@ class ProcessOrderController extends Controller
                     'c6_descri'  => $product->b1_desc,
                     'c6_um'      => $product->b1_um,
                     'c6_qtdven'  => $quantity,
-                    'c6_prcven'  => $price->da1_prcven ?? 0,
-                    'c6_valor'   => $quantity * ($price->da1_prcven ?? 0),
+                    'c6_prcven'  => $prcven,
+                    'c6_valor'   => $valor,
                     'c6_qtdlib'  => $quantity,
                     'c6_segum'   => $product->b1_segum,
                     'c6_tes'     => $product->b1_ts,
                     'c6_local'   => $product->b1_locpad,
                     'c6_cf'      => '612',
                     'c6_cli'     => $client->a1_cod,
-                    'c6_entreg'  => $futureYmd, // ⬅️ antes: ''  | ahora: hoy + 30
+                    'c6_entreg'  => $futureYmd,
                     'c6_loja'    => $store,
                     'c6_num'     => $orderNumber,
-                    'c6_prunit'  => $price->da1_prcven ?? 0,
+                    'c6_prunit'  => $prcven,
                     'c6_op'      => '07',
                     'c6_opc'     => '',
                     'c6_tpop'    => 'F',
@@ -129,7 +148,7 @@ class ProcessOrderController extends Controller
                     'c6_qtdemp'  => $quantity,
                     'c6_qtdemp2' => $boxes,
                     'c6_mopc'    => null,
-                    'c6_sugentr' => $futureYmd, // ⬅️ antes: hoy | ahora: hoy + 30
+                    'c6_sugentr' => $futureYmd,
                     'c6_vdobs'   => null,
                     'c6_rateio'  => '2',
                     'c6_tpprod'  => '1',
@@ -140,6 +159,7 @@ class ProcessOrderController extends Controller
                     'c6_xcodcli' => $product->b1_xcodcli ?? '',
                     'c6_xoccli'  => $ocCliente,
                 ];
+
                 DB::table('sc6010')->insert($sc6Data);
                 $sc6DataList[] = $sc6Data;
                 $itemNumber++;
@@ -155,12 +175,14 @@ class ProcessOrderController extends Controller
                 'articulos_count' => count($articulos),
                 'sc6010_recnos'   => array_map(fn($item) => $item['r_e_c_n_o_'], $sc6DataList),
             ]);
+
             return response()->json([
                 'message'      => 'Order created successfully',
                 'order_number' => $orderNumber,
                 'sc5010'       => $sc5Data,
                 'sc6010'       => $sc6DataList,
             ], 201);
+
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Failed to create order', [
