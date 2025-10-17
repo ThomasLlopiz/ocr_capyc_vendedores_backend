@@ -133,7 +133,9 @@ class ProcessOrderController extends Controller
                 }
 
                 $sc6Recno = DB::table('sc6010')->max('r_e_c_n_o_') + 1;
-                $boxes    = $product->b1_conv ? ceil($quantity / $product->b1_conv) : 0;
+                $boxes    = array_key_exists('c6_qtdemp2', $art)
+                    ? (int) $art['c6_qtdemp2']
+                    : ($product->b1_conv ? (int) ceil($quantity / $product->b1_conv) : 0);
 
                 $sc6Data = [
                     'c6_filial'  => $filial,
@@ -289,42 +291,76 @@ class ProcessOrderController extends Controller
 
     public function updateOrderItem(Request $request, $orderNumber, $item)
     {
+        // 1) Aceptar también c6_qtdemp2 (y opcionalmente c6_qtdlib)
         $data = $request->only([
-            'c6_entreg', 'c6_xoccli', 'c6_prunit', 'c6_prcven', 'c6_valor', 'c6_qtdven',
+            'c6_entreg',
+            'c6_xoccli',
+            'c6_prunit',
+            'c6_prcven',
+            'c6_valor',
+            'c6_qtdven',
+            'c6_qtdemp2', // 👈 NUEVO: cajas
+            'c6_qtdlib',  // 👈 opcional si querés mantener liberación alineada
         ]);
 
-        // >>>>> CAMBIO: si no viene fecha de entrega, usamos hoy + 30 días
+        // 2) Defaults/normalizaciones
         if (empty($data['c6_entreg'])) {
-            $data['c6_entreg'] = now()->addDays(30)->format('Ymd'); // ⬅️  hoy + 30
+            $data['c6_entreg'] = now()->addDays(30)->format('Ymd');
+        }
+
+        // casteos básicos (evitás strings en campos numéricos)
+        if (array_key_exists('c6_qtdven', $data)) {
+            $data['c6_qtdven'] = (int) $data['c6_qtdven'];
+        }
+
+        if (array_key_exists('c6_qtdemp2', $data)) {
+            $data['c6_qtdemp2'] = (int) $data['c6_qtdemp2'];
+        }
+
+        if (array_key_exists('c6_qtdlib', $data)) {
+            $data['c6_qtdlib'] = (int) $data['c6_qtdlib'];
+        }
+
+        if (array_key_exists('c6_prcven', $data)) {
+            $data['c6_prcven'] = (float) $data['c6_prcven'];
+        }
+
+        if (array_key_exists('c6_prunit', $data)) {
+            $data['c6_prunit'] = (float) $data['c6_prunit'];
+        }
+
+        if (array_key_exists('c6_valor', $data)) {
+            $data['c6_valor'] = (float) $data['c6_valor'];
         }
 
         try {
             $filial = $request->input('filial', '');
-
-            // Si no llega filial, la buscamos desde sc6010
             if (! $filial) {
                 $filial = DB::table('sc6010')
                     ->where('c6_num', $orderNumber)
                     ->value('c6_filial');
             }
 
+            // 3) Normalizar item a 2 dígitos si en tu BD se guarda así
+            $itemPadded = str_pad($item, 2, '0', STR_PAD_LEFT);
+
             \Log::info("Iniciando actualización de ítem SC6010", [
                 'orderNumber' => $orderNumber,
-                'item'        => $item,
+                'item'        => $itemPadded,
                 'filial'      => $filial,
                 'data'        => $data,
             ]);
 
             $affected = DB::table('sc6010')
                 ->where('c6_num', $orderNumber)
-                ->where('c6_item', $item)
+                ->where('c6_item', $itemPadded)
                 ->where('c6_filial', $filial)
                 ->update($data);
 
             if ($affected === 0) {
                 \Log::warning("No se actualizó ningún registro en SC6010", [
                     'orderNumber' => $orderNumber,
-                    'item'        => $item,
+                    'item'        => $itemPadded,
                     'filial'      => $filial,
                     'data'        => $data,
                 ]);
@@ -333,7 +369,7 @@ class ProcessOrderController extends Controller
 
             \Log::info("✅ Actualización de ítem SC6010 completada", [
                 'orderNumber' => $orderNumber,
-                'item'        => $item,
+                'item'        => $itemPadded,
                 'filial'      => $filial,
                 'data'        => $data,
             ]);
@@ -348,4 +384,5 @@ class ProcessOrderController extends Controller
             return response()->json(['error' => 'Failed to update order item: ' . $e->getMessage()], 500);
         }
     }
+
 }
