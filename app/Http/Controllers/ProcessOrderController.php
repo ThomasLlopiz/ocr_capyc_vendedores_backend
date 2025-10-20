@@ -291,49 +291,32 @@ class ProcessOrderController extends Controller
 
     public function updateOrderItem(Request $request, $orderNumber, $item)
     {
-        // 1) Aceptar también c6_qtdemp2 (y opcionalmente c6_qtdlib)
+        // Solo los campos que permitimos actualizar
         $data = $request->only([
-            'c6_entreg',
-            'c6_xoccli',
-            'c6_prunit',
-            'c6_prcven',
-            'c6_valor',
-            'c6_qtdven',
-            'c6_qtdemp2', // 👈 NUEVO: cajas
-            'c6_qtdlib',  // 👈 opcional si querés mantener liberación alineada
+            'c6_entreg', 'c6_xoccli', 'c6_prunit', 'c6_prcven', 'c6_valor', 'c6_qtdven', 'c6_tes',
         ]);
 
-        // 2) Defaults/normalizaciones
+        // Opción B: si c6_xoccli llega vacío (""), NO lo actualizamos
+        if (array_key_exists('c6_xoccli', $data)) {
+            // normalizamos
+            $xoccli = $data['c6_xoccli'];
+            $xoccli = is_string($xoccli) ? trim($xoccli) : $xoccli;
+
+            // si es "" o null ⇒ no lo incluyo en el update
+            if ($xoccli === '' || is_null($xoccli)) {
+                unset($data['c6_xoccli']);
+            } else {
+                $data['c6_xoccli'] = $xoccli; // guardo ya trimmeado
+            }
+        }
+
+        // Si no llega fecha de entrega, por defecto hoy + 30 días
         if (empty($data['c6_entreg'])) {
             $data['c6_entreg'] = now()->addDays(30)->format('Ymd');
         }
 
-        // casteos básicos (evitás strings en campos numéricos)
-        if (array_key_exists('c6_qtdven', $data)) {
-            $data['c6_qtdven'] = (int) $data['c6_qtdven'];
-        }
-
-        if (array_key_exists('c6_qtdemp2', $data)) {
-            $data['c6_qtdemp2'] = (int) $data['c6_qtdemp2'];
-        }
-
-        if (array_key_exists('c6_qtdlib', $data)) {
-            $data['c6_qtdlib'] = (int) $data['c6_qtdlib'];
-        }
-
-        if (array_key_exists('c6_prcven', $data)) {
-            $data['c6_prcven'] = (float) $data['c6_prcven'];
-        }
-
-        if (array_key_exists('c6_prunit', $data)) {
-            $data['c6_prunit'] = (float) $data['c6_prunit'];
-        }
-
-        if (array_key_exists('c6_valor', $data)) {
-            $data['c6_valor'] = (float) $data['c6_valor'];
-        }
-
         try {
+            // Filial: si no llega en request, la busco en SC6010
             $filial = $request->input('filial', '');
             if (! $filial) {
                 $filial = DB::table('sc6010')
@@ -341,26 +324,23 @@ class ProcessOrderController extends Controller
                     ->value('c6_filial');
             }
 
-            // 3) Normalizar item a 2 dígitos si en tu BD se guarda así
-            $itemPadded = str_pad($item, 2, '0', STR_PAD_LEFT);
-
             \Log::info("Iniciando actualización de ítem SC6010", [
                 'orderNumber' => $orderNumber,
-                'item'        => $itemPadded,
+                'item'        => $item,
                 'filial'      => $filial,
                 'data'        => $data,
             ]);
 
             $affected = DB::table('sc6010')
                 ->where('c6_num', $orderNumber)
-                ->where('c6_item', $itemPadded)
+                ->where('c6_item', $item)
                 ->where('c6_filial', $filial)
                 ->update($data);
 
             if ($affected === 0) {
                 \Log::warning("No se actualizó ningún registro en SC6010", [
                     'orderNumber' => $orderNumber,
-                    'item'        => $itemPadded,
+                    'item'        => $item,
                     'filial'      => $filial,
                     'data'        => $data,
                 ]);
@@ -369,7 +349,7 @@ class ProcessOrderController extends Controller
 
             \Log::info("✅ Actualización de ítem SC6010 completada", [
                 'orderNumber' => $orderNumber,
-                'item'        => $itemPadded,
+                'item'        => $item,
                 'filial'      => $filial,
                 'data'        => $data,
             ]);
