@@ -5,10 +5,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Sc6010 extends Model
 {
-    protected $table      = 'sc6010';
+    protected $connection = 'ocr_capyc_vendedores';
+
+    protected $table = 'sc6010';
     protected $primaryKey = 'id';
-    public $incrementing  = true;
-    public $timestamps    = true;
+    public $incrementing = true;
+    public $timestamps = true;
 
     protected $fillable = [
         'c6_filial',
@@ -160,31 +162,31 @@ class Sc6010 extends Model
     ];
 
     protected $casts = [
-        'c6_qtdven'  => 'double',
-        'c6_prcven'  => 'double',
-        'c6_valor'   => 'double',
-        'c6_qtdlib'  => 'double',
+        'c6_qtdven' => 'double',
+        'c6_prcven' => 'double',
+        'c6_valor' => 'double',
+        'c6_qtdlib' => 'double',
         'c6_qtdlib2' => 'double',
-        'c6_unsven'  => 'double',
-        'c6_qtdent'  => 'double',
+        'c6_unsven' => 'double',
+        'c6_qtdent' => 'double',
         'c6_qtdent2' => 'double',
         'c6_descont' => 'double',
         'c6_valdesc' => 'double',
-        'c6_comis1'  => 'double',
-        'c6_comis2'  => 'double',
-        'c6_comis3'  => 'double',
-        'c6_comis4'  => 'double',
-        'c6_comis5'  => 'double',
-        'c6_prunit'  => 'double',
-        'c6_ipidev'  => 'double',
+        'c6_comis1' => 'double',
+        'c6_comis2' => 'double',
+        'c6_comis3' => 'double',
+        'c6_comis4' => 'double',
+        'c6_comis5' => 'double',
+        'c6_prunit' => 'double',
+        'c6_ipidev' => 'double',
         'c6_picmret' => 'double',
         'c6_qtdrese' => 'double',
-        'c6_qtdemp'  => 'double',
+        'c6_qtdemp' => 'double',
         'c6_qtdemp2' => 'double',
         'c6_potenci' => 'double',
         'c6_funrura' => 'double',
-        'c6_fetab'   => 'double',
-        'c6_xconv'   => 'double',
+        'c6_fetab' => 'double',
+        'c6_xconv' => 'double',
     ];
     public function order()
     {
