@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
+use Illuminate\Database\QueryException;
 
 class AuthController extends Controller
 {
@@ -17,7 +19,7 @@ class AuthController extends Controller
     {
         $currentUser = $request->user();
         Log::info('Users endpoint hit', [
-            'user_id'   => $currentUser->id,
+            'user_id' => $currentUser->id,
             'user_role' => $currentUser->role,
         ]);
 
@@ -41,7 +43,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Lista de usuarios obtenida exitosamente',
-            'users'   => $users,
+            'users' => $users,
         ], 200);
     }
 
@@ -51,27 +53,28 @@ class AuthController extends Controller
 
         try {
             $request->validate([
-                'name'     => 'required|string|max:255|unique:users,name',
-                'email'    => 'required|string|email|unique:users,email',
+                'name' => 'required|string|max:255|unique:users,name',
+                'email' => 'required|string|email|unique:users,email',
                 'password' => 'required|string|confirmed|min:8',
-                'code'     => 'nullable|string|size:6',
+                'code' => 'nullable|string|size:6|unique:users,code',
             ], [
-                'name.required'      => 'El nombre es obligatorio.',
-                'name.unique'        => 'El nombre ya está registrado.',
-                'email.required'     => 'El correo es obligatorio.',
-                'email.email'        => 'El correo debe ser una dirección válida.',
-                'email.unique'       => 'El correo ya está registrado.',
-                'password.required'  => 'La contraseña es obligatoria.',
-                'password.min'       => 'La contraseña debe tener al menos 8 caracteres.',
+                'name.required' => 'El nombre es obligatorio.',
+                'name.unique' => 'El nombre ya está registrado.',
+                'email.required' => 'El correo es obligatorio.',
+                'email.email' => 'El correo debe ser una dirección válida.',
+                'email.unique' => 'El correo ya está registrado.',
+                'password.required' => 'La contraseña es obligatoria.',
+                'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
                 'password.confirmed' => 'La confirmación de la contraseña no coincide.',
-                'code.size'          => 'El código debe tener exactamente 6 caracteres.',
+                'code.size' => 'El código debe tener exactamente 6 caracteres.',
+                'code.unique' => 'El código ya está en uso por otro usuario.',
             ]);
 
             $user = User::create([
-                'name'     => $request->name,
-                'email'    => $request->email,
+                'name' => $request->name,
+                'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'code'     => $request->code ?? null,
+                'code' => $request->code ?? null,
             ]);
 
             $user->sendEmailVerificationNotification();
@@ -80,77 +83,114 @@ class AuthController extends Controller
 
             return response()->json([
                 'message' => 'Usuario creado exitosamente. Revisa tu email para confirmar.',
-                'user'    => $user,
-                'token'   => $token,
+                'user' => $user,
+                'token' => $token,
             ], 201)->header('Content-Type', 'application/json');
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'The given data was invalid.',
-                'errors'  => $e->errors(),
+                'errors' => $e->errors(),
             ], 422);
         }
     }
+
     public function login(Request $request)
     {
         $request->validate([
-            'email'    => 'required|string|email',
+            'email' => 'required|string|email',
             'password' => 'required|string',
         ]);
 
-        // Verificar si el email existe
         $user = User::where('email', $request->email)->first();
 
-        if (! $user) {
+        if (!$user) {
             throw ValidationException::withMessages([
                 'email' => ['No existe este email en la base de datos'],
             ]);
         }
 
-        // Verificar si el email está verificado
-        if (! $user->email_verified_at) {
+        if (!$user->email_verified_at) {
             throw ValidationException::withMessages([
                 'email' => ['Email no verificado. Por favor, verifica tu email'],
             ]);
         }
 
-        // Intentar autenticar
-        if (! Auth::attempt($request->only(['email', 'password']))) {
+        if (!Auth::attempt($request->only(['email', 'password']))) {
             throw ValidationException::withMessages([
                 'email' => ['Contraseña incorrecta'],
             ]);
         }
 
-        $user  = Auth::user();
+        $user = Auth::user();
         $token = $user->createToken('api-token')->plainTextToken;
 
         return response()->json([
             'message' => 'Inicio de sesión exitoso',
-            'user'    => $user,
-            'token'   => $token,
+            'user' => $user,
+            'token' => $token,
         ]);
     }
 
     public function update(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'name'  => 'required|string',
-            'code'  => 'nullable|string|size:6',
-            'role'  => 'nullable|string|in:user,vendedor,admin,',
-        ]);
+        try {
+            $request->validate([
+                'email' => 'required|email|exists:users,email',
+                'name' => 'required|string|max:255',
+                'code' => [
+                    'nullable',
+                    'string',
+                    'size:6',
+                    Rule::unique('users', 'code')->ignore($request->email, 'email'),
+                ],
+                'role' => 'nullable|string|in:user,vendedor,admin,operador',
+            ], [
+                'email.required' => 'El correo es obligatorio.',
+                'email.email' => 'El correo debe ser una dirección válida.',
+                'email.exists' => 'El correo no existe en la base de datos.',
+                'name.required' => 'El nombre es obligatorio.',
+                'code.size' => 'El código debe tener exactamente 6 caracteres.',
+                'code.unique' => 'El código ya está en uso por otro usuario.',
+                'role.in' => 'El rol seleccionado no es válido.',
+            ]);
 
-        $user = User::where('email', $request->email)->firstOrFail();
-        if ($request->user()->role !== 'admin') {
-            return response()->json(['message' => 'Solo administradores pueden actualizar usuarios.'], 403);
+            $user = User::where('email', $request->email)->firstOrFail();
+
+            if ($request->user()->role !== 'admin') {
+                return response()->json(['message' => 'Solo administradores pueden actualizar usuarios.'], 403);
+            }
+
+            $user->update([
+                'name' => $request->name,
+                'code' => $request->code,
+                'role' => $request->role,
+            ]);
+
+            return response()->json(['message' => 'Usuario actualizado exitosamente'], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            // Por si se dispara directamente la restricción UNIQUE de la DB
+            if (str_contains($e->getMessage(), 'users_code_unique')) {
+                return response()->json([
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'code' => ['El código ya está en uso por otro usuario.'],
+                    ],
+                ], 422);
+            }
+
+            Log::error('Error al actualizar usuario', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error al actualizar usuario.',
+            ], 500);
         }
-
-        $user->update([
-            'name' => $request->name,
-            'code' => $request->code,
-            'role' => $request->role,
-        ]);
-
-        return response()->json(['message' => 'Usuario actualizado exitosamente'], 200);
     }
 
     public function delete(Request $request)
@@ -161,12 +201,12 @@ class AuthController extends Controller
             'email' => 'required|string|email|exists:users,email',
         ], [
             'email.required' => 'El correo es obligatorio.',
-            'email.email'    => 'El correo debe ser una dirección válida.',
-            'email.exists'   => 'El correo no existe en la base de datos.',
+            'email.email' => 'El correo debe ser una dirección válida.',
+            'email.exists' => 'El correo no existe en la base de datos.',
         ]);
 
         $authenticatedUser = $request->user();
-        $targetUser        = User::where('email', $request->email)->first();
+        $targetUser = User::where('email', $request->email)->first();
 
         if ($authenticatedUser->email === $request->email) {
             throw ValidationException::withMessages([
@@ -186,6 +226,7 @@ class AuthController extends Controller
             'message' => 'Usuario eliminado exitosamente',
         ], 200);
     }
+
     public function forgotPassword(Request $request)
     {
         $request->validate([
@@ -195,15 +236,15 @@ class AuthController extends Controller
         $status = Password::sendResetLink($request->only('email'));
 
         return $status === Password::RESET_LINK_SENT
-        ? response()->json(['message' => 'Enlace de recuperación enviado'])
-        : response()->json(['message' => 'Error al enviar el enlace'], 400);
+            ? response()->json(['message' => 'Enlace de recuperación enviado'])
+            : response()->json(['message' => 'Error al enviar el enlace'], 400);
     }
 
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'token'    => 'required|string',
-            'email'    => 'required|email',
+            'token' => 'required|string',
+            'email' => 'required|email',
             'password' => 'required|string|confirmed|min:8',
         ]);
 
@@ -211,15 +252,15 @@ class AuthController extends Controller
             $request->only(['email', 'password', 'password_confirmation', 'token']),
             function ($user, $password) {
                 $user->forceFill([
-                    'password'       => Hash::make($password),
+                    'password' => Hash::make($password),
                     'remember_token' => Str::random(60),
                 ])->save();
             }
         );
 
         return $status === Password::PASSWORD_RESET
-        ? response()->json(['message' => 'Contraseña restablecida'])
-        : response()->json(['message' => 'Error al restablecer la contraseña'], 400);
+            ? response()->json(['message' => 'Contraseña restablecida'])
+            : response()->json(['message' => 'Error al restablecer la contraseña'], 400);
     }
 
     public function logout(Request $request)
