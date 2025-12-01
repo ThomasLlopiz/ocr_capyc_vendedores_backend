@@ -10,28 +10,26 @@ class DA0DatateController extends Controller
     public function index(Request $request)
     {
         try {
-            $q     = trim((string) $request->query('q', ''));
+            $q = trim((string) $request->query('q', ''));
             $limit = (int) $request->query('limit', 25);
             $limit = $limit <= 0 ? 25 : ($limit > 200 ? 200 : $limit);
 
-            // ✅ No q => no opciones (evita "151" o listados por defecto)
             if ($q === '') {
-                Log::info('DA0Datate index: q vacío -> []');
                 return response()->json([], 200);
             }
 
-            $driver = DB::connection()->getDriverName();
+            $driver = DB::connection('totvs')->getDriverName();
 
-            $query = DB::table('da0010')->select('da0_codtab', 'da0_descri');
+            $query = DB::connection('totvs')
+                ->table('da0010')
+                ->select('da0_codtab', 'da0_descri');
 
             if ($driver === 'pgsql') {
-                // PostgreSQL => ILIKE (case-insensitive nativo)
                 $query->where(function ($w) use ($q) {
                     $w->where('da0_codtab', 'ILIKE', "%{$q}%")
                         ->orWhere('da0_descri', 'ILIKE', "%{$q}%");
                 });
             } else {
-                // MySQL / MariaDB / SQL Server => forzamos case-insensitive por UPPER
                 $Q = mb_strtoupper($q, 'UTF-8');
                 $query->where(function ($w) use ($Q) {
                     $w->whereRaw('UPPER(da0_codtab) LIKE ?', ["%{$Q}%"])
@@ -52,7 +50,6 @@ class DA0DatateController extends Controller
                 ->values()
                 ->toArray();
 
-            Log::info('DA0Datate index', ['q' => $q, 'driver' => $driver, 'count' => count($rows)]);
             return response()->json($rows, 200);
 
         } catch (\Exception $e) {
