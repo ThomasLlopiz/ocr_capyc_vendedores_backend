@@ -12,6 +12,8 @@ return [
     'faker_locale'    => 'es_AR',
     'cipher'          => 'AES-256-CBC',
     'key'             => env('APP_KEY'),
+    'frontend_url'    => env('FRONTEND_URL', env('APP_URL')),
+
     'previous_keys'   => [
          ...array_filter(
             explode(',', env('APP_PREVIOUS_KEYS', ''))

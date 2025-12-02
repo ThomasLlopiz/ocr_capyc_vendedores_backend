@@ -8,9 +8,11 @@ class CustomVerificationEmail extends Notification
 {
     public function toMail($notifiable)
     {
-        // Generamos la URL de verificación en Laravel
-        $url = url('/api/email/verify/' . $notifiable->getKey() . '/' . sha1($notifiable->getEmailForVerification()) .
-            '?redirect=' . urlencode('http://127.0.0.1:8500/login'));
+        $serverIp    = getHostByName(getHostName());
+        $frontendUrl = "http://{$serverIp}:8500";
+        $verifyUrl   = url('/api/email/verify/' . $notifiable->getKey() . '/' . sha1($notifiable->getEmailForVerification()));
+
+        $url = $verifyUrl . '?redirect=' . urlencode($frontendUrl . '/login');
 
         return (new MailMessage)
             ->subject('Verifica tu dirección de correo electrónico')
@@ -20,6 +22,7 @@ class CustomVerificationEmail extends Notification
             ->line('Si no creaste una cuenta, no es necesario que hagas nada.')
             ->salutation('Saludos, Equipo OCR_Capyc_Vendedores');
     }
+
     public function via($notifiable)
     {
         return ['mail'];
