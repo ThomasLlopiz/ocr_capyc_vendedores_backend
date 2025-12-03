@@ -7,11 +7,11 @@ class Sc5010 extends Model
 {
     protected $connection = 'ocr_capyc_vendedores';
 
-    protected $table = 'sc5010';
+    protected $table      = 'sc5010';
     protected $primaryKey = 'r_e_c_n_o_';
-    public $incrementing = false; // si r_e_c_n_o_ no es autoincremental
-    protected $keyType = 'int'; // o 'string' según corresponda
-    public $timestamps = false;
+    public $incrementing  = false; // si r_e_c_n_o_ no es autoincremental
+    protected $keyType    = 'int'; // o 'string' según corresponda
+    public $timestamps    = false;
 
     protected $fillable = [
         'c5_filial',
@@ -147,6 +147,7 @@ class Sc5010 extends Model
         'd_e_l_e_t_',
         'r_e_c_d_e_l_',
         'c5_xobs',
+        'c5_xpdf', // 👈 NUEVO
         'c5_xexp',
         'c5_coment',
         'c5_numext',
@@ -154,28 +155,28 @@ class Sc5010 extends Model
     ];
 
     protected $casts = [
-        'c5_comis1' => 'double',
-        'c5_comis2' => 'double',
-        'c5_comis3' => 'double',
-        'c5_comis4' => 'double',
-        'c5_comis5' => 'double',
-        'c5_desc1' => 'double',
-        'c5_desc2' => 'double',
-        'c5_desc3' => 'double',
-        'c5_desc4' => 'double',
-        'c5_descfi' => 'double',
-        'c5_parc1' => 'double',
-        'c5_parc2' => 'double',
-        'c5_parc3' => 'double',
-        'c5_parc4' => 'double',
+        'c5_comis1'  => 'double',
+        'c5_comis2'  => 'double',
+        'c5_comis3'  => 'double',
+        'c5_comis4'  => 'double',
+        'c5_comis5'  => 'double',
+        'c5_desc1'   => 'double',
+        'c5_desc2'   => 'double',
+        'c5_desc3'   => 'double',
+        'c5_desc4'   => 'double',
+        'c5_descfi'  => 'double',
+        'c5_parc1'   => 'double',
+        'c5_parc2'   => 'double',
+        'c5_parc3'   => 'double',
+        'c5_parc4'   => 'double',
         'c5_despesa' => 'double',
         'c5_fretaut' => 'double',
-        'c5_moeda' => 'double',
-        'c5_frete' => 'double',
-        'c5_seguro' => 'double',
-        'c5_pesol' => 'double',
-        'c5_pbruto' => 'double',
-        'c5_reimp' => 'double',
+        'c5_moeda'   => 'double',
+        'c5_frete'   => 'double',
+        'c5_seguro'  => 'double',
+        'c5_pesol'   => 'double',
+        'c5_pbruto'  => 'double',
+        'c5_reimp'   => 'double',
         'c5_volume1' => 'double',
         'c5_volume2' => 'double',
         'c5_volume3' => 'double',
@@ -185,7 +186,7 @@ class Sc5010 extends Model
         'c5_descont' => 'double',
         'c5_pdescab' => 'double',
         'c5_vlr_frt' => 'double',
-        'c5_txref' => 'double',
+        'c5_txref'   => 'double',
         'c5_moedtit' => 'double',
     ];
     public function items()

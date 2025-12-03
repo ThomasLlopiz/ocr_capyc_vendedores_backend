@@ -46,6 +46,9 @@ class ProcessOrderController extends Controller
             $orderNumber = $this->generateOrderNumber($filial);
             $sc5Recno    = DB::connection('ocr_capyc_vendedores')
                 ->table('sc5010')->max('r_e_c_n_o_') + 1;
+
+            $c5_xpdf = $request->input('c5_xpdf'); // mismo nombre que pusiste en data["c5_xpdf"]
+
             $sc5Data = [
                 'c5_filial'    => $filial,
                 'c5_num'       => $orderNumber,
@@ -65,6 +68,8 @@ class ProcessOrderController extends Controller
                 'c5_condpag'   => $client->a1_cond,
                 'c5_xoccli'    => $ocCliente,
                 'c5_emissao'   => now()->format('Ymd'),
+                'c5_xpdf'      => $c5_xpdf, // número de PDF (correlativo)
+
                 'c5_txmoeda'   => '0',
                 'c5_tpcarga'   => '2',
                 'c5_gerawms'   => '1',
@@ -193,6 +198,7 @@ class ProcessOrderController extends Controller
             return response()->json([
                 'message'      => 'Order created successfully',
                 'order_number' => $orderNumber,
+                'pdf_file'     => $c5_xpdf, // 👈 se lo mandamos al front
                 'sc5010'       => $sc5Data,
                 'sc6010'       => $sc6DataList,
             ], 201);
