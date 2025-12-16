@@ -11,8 +11,36 @@ class SC5010Controller extends Controller
     {
         $query = Sc5010::query();
 
-        if ($request->filled('c5_num')) {
-            $query->where('c5_num', $request->input('c5_num'));
+        if ($request->filled('cliente_num')) {
+            $cliente = $request->input('cliente_num');
+            $query->where(function ($q) use ($cliente) {
+                $q->where('c5_cliente', $cliente)
+                    ->orWhere('c5_codcli', $cliente);
+            });
+        }
+
+        if ($request->filled('oc_cliente')) {
+            $oc = trim((string) $request->input('oc_cliente'));
+
+            if ($oc !== "") {
+                $query->where('c5_num', 'ilike', "%{$oc}%");
+            }
+        }
+        if ($request->filled('modalidad')) {
+            $modal = trim($request->input('modalidad'));
+            $query->where('c5_naturez', 'ilike', "%{$modal}%");
+        }
+
+        if ($request->filled('estado')) {
+            $estado = $request->input('estado');
+            if ($estado === "1") {
+                $query->where('estado_ocs', 1);
+            } elseif ($estado === "0") {
+                $query->where(function ($q) {
+                    $q->whereNull('estado_ocs')
+                        ->orWhere('estado_ocs', 0);
+                });
+            }
         }
 
         if ($request->filled('fecha_desde')) {
@@ -23,12 +51,15 @@ class SC5010Controller extends Controller
             $query->where('c5_emissao', '<=', $request->input('fecha_hasta'));
         }
 
+        // Siempre excluir registros borrados lógicamente
         $query->where('r_e_c_d_e_l_', 0);
 
-        $limit = $request->input('limit', 10);
-
-        \Log::info('Fetching pedidos', [
-            'c5_num'      => $request->input('c5_num'),
+        $limit = (int) $request->input('limit', 10);
+        \Log::info('Fetching pedidos with filters', [
+            'cliente_num' => $request->input('cliente_num'),
+            'oc_cliente'  => $request->input('oc_cliente'),
+            'modalidad'   => $request->input('modalidad'),
+            'estado'      => $request->input('estado'),
             'fecha_desde' => $request->input('fecha_desde'),
             'fecha_hasta' => $request->input('fecha_hasta'),
             'limit'       => $limit,
