@@ -13,18 +13,23 @@ class ProcessOrderController extends Controller
         $store      = $request->input('store');
         $filial     = $request->input('filial');
         $articulos  = $request->input('articulos', []);
-        $ocCliente  = $request->input('oc_cliente', '');
+        $ocCliente  = trim((string) $request->input('oc_cliente', ''));
 
+        if (
+            $ocCliente === '' ||
+            $ocCliente === '0' ||
+            $ocCliente === '000000' ||
+            strtoupper($ocCliente) === 'OCC-000000'
+        ) {
+            $ocCliente = $this->generarOcCliente();
+        }
         if (! $filial) {
             return response()->json(['error' => 'Filial is required'], 400);
         }
         if (empty($articulos)) {
             return response()->json(['error' => 'No articles provided'], 400);
         }
-
-                                                                               // --------- HEADER OPCIONALES (CON DEFAULTS SEGUROS) ----------
-                                                                               // Ajusta estos defaults a tu negocio / Protheus
-        $c5_naturez = trim((string) $request->input('c5_naturez', 'ENVASES')); // ← NOT NULL
+        $c5_naturez = trim((string) $request->input('c5_naturez', 'ENVASES'));
         $c5_tabela  = trim((string) $request->input('c5_tabela', '151'));
         $c5_moeda   = trim((string) $request->input('c5_moeda', '1'));
         $c5_tiplib  = trim((string) $request->input('c5_tiplib', '1'));
@@ -47,7 +52,7 @@ class ProcessOrderController extends Controller
             $sc5Recno    = DB::connection('ocr_capyc_vendedores')
                 ->table('sc5010')->max('r_e_c_n_o_') + 1;
 
-            $c5_xpdf = $request->input('c5_xpdf'); // mismo nombre que pusiste en data["c5_xpdf"]
+            $c5_xpdf = $request->input('c5_xpdf');
 
             $sc5Data = [
                 'c5_filial'    => $filial,
@@ -68,8 +73,7 @@ class ProcessOrderController extends Controller
                 'c5_condpag'   => $client->a1_cond,
                 'c5_xoccli'    => $ocCliente,
                 'c5_emissao'   => now()->format('Ymd'),
-                'c5_xpdf'      => $c5_xpdf, // número de PDF (correlativo)
-
+                'c5_xpdf'      => $c5_xpdf,
                 'c5_txmoeda'   => '0',
                 'c5_tpcarga'   => '2',
                 'c5_gerawms'   => '1',
@@ -198,7 +202,7 @@ class ProcessOrderController extends Controller
             return response()->json([
                 'message'      => 'Order created successfully',
                 'order_number' => $orderNumber,
-                'pdf_file'     => $c5_xpdf, // 👈 se lo mandamos al front
+                'pdf_file'     => $c5_xpdf,
                 'sc5010'       => $sc5Data,
                 'sc6010'       => $sc6DataList,
             ], 201);
@@ -213,6 +217,24 @@ class ProcessOrderController extends Controller
             ]);
             return response()->json(['error' => 'Failed to create order: ' . $e->getMessage()], 500);
         }
+    }
+    private function generarOcCliente(): string
+    {
+        $last = DB::connection('ocr_capyc_vendedores')
+            ->table('sc5010')
+            ->whereNotNull('c5_xoccli')
+            ->where('c5_xoccli', 'like', 'OCC-%')
+            ->orderByRaw("CAST(SUBSTRING(c5_xoccli, 5, 6) AS INTEGER) DESC")
+            ->value('c5_xoccli');
+
+        if (! $last) {
+            return 'OCC-000001';
+        }
+
+        preg_match('/OCC-(\d+)/', $last, $m);
+        $next = isset($m[1]) ? ((int) $m[1] + 1) : 1;
+
+        return 'OCC-' . str_pad((string) $next, 6, '0', STR_PAD_LEFT);
     }
 
     private function generateOrderNumber($filial)
