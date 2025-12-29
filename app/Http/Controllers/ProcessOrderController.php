@@ -296,12 +296,16 @@ class ProcessOrderController extends Controller
             'c5_condpag' => 'string|nullable',
             'c5_tipocli' => 'string|nullable',
         ]);
-
-        \DB::connection('ocr_capyc_vendedores')
+        $payload = collect($payload);
+        if ($payload->has('c5_xobs')) {
+            $payload['c5_xobs'] = trim((string) ($payload['c5_xobs'] ?? ''));
+        }
+        DB::connection('ocr_capyc_vendedores')
             ->table('sc5010')
             ->where('c5_num', $orderNumber)
             ->where('c5_filial', $filial)
-            ->update($payload);
+            ->update($payload->toArray());
+
         $sc5010 = \App\Models\Sc5010::where('c5_num', $orderNumber)
             ->where('c5_filial', $filial)
             ->first();
