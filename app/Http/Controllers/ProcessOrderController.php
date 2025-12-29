@@ -139,9 +139,8 @@ class ProcessOrderController extends Controller
 
                 $sc6Recno = DB::connection('ocr_capyc_vendedores')
                     ->table('sc6010')->max('r_e_c_n_o_') + 1;
-                $boxes = array_key_exists('c6_qtdemp2', $art)
-                    ? (int) $art['c6_qtdemp2']
-                    : ($product->b1_conv ? (int) ceil($quantity / $product->b1_conv) : 0);
+                $conv = $art['c6_xconv'] ?? $product->b1_conv ?? 0;
+                $conv = (float) $conv;
 
                 $sc6Data = [
                     'c6_filial'  => $filial,
@@ -167,7 +166,6 @@ class ProcessOrderController extends Controller
                     'c6_tpop'    => 'F',
                     'c6_geranf'  => 'S',
                     'c6_qtdemp'  => $quantity,
-                    'c6_qtdemp2' => $boxes,
                     'c6_mopc'    => null,
                     'c6_sugentr' => $entreg,
                     'c6_vdobs'   => null,
