@@ -54,6 +54,14 @@ class ProcessOrderController extends Controller
             }
 
             $orderNumber = $this->generateOrderNumber($filial);
+            \Log::info('🔢 [createOrder] Número de orden generado', [
+                'orderNumber' => $orderNumber,
+                'filial'      => $filial,
+                'cliente'     => $clientCode,
+                'oc_cliente'  => $ocCliente,
+                'tes'         => $c5_tes,
+                'duplicada'   => $c5_ocduplicada,
+            ]);
 
             $sc5Recno = DB::connection('ocr_capyc_vendedores')
                 ->table('sc5010')->max('r_e_c_n_o_') + 1;
@@ -96,6 +104,15 @@ class ProcessOrderController extends Controller
                     'r_e_c_n_o_'     => $sc5Recno,
                     'r_e_c_d_e_l_'   => 0,
                 ]);
+            \Log::info('📌 [createOrder] SC5010 insertado', [
+                'c5_num'         => $orderNumber,
+                'c5_filial'      => $filial,
+                'c5_cliente'     => $client->a1_cod,
+                'c5_xoccli'      => $ocCliente,
+                'c5_tes'         => $c5_tes,
+                'c5_ocduplicada' => $c5_ocduplicada,
+                'r_e_c_n_o_'     => $sc5Recno,
+            ]);
 
             $itemNumber  = 1;
             $sc6DataList = [];
@@ -191,11 +208,23 @@ class ProcessOrderController extends Controller
                 DB::connection('ocr_capyc_vendedores')
                     ->table('sc6010')
                     ->insert($sc6Data);
+                \Log::info('📦 [createOrder] Ítem SC6010 insertado', [
+                    'orderNumber' => $orderNumber,
+                    'item'        => $sc6Data['c6_item'],
+                    'producto'    => $sc6Data['c6_produto'],
+                    'cantidad'    => $sc6Data['c6_qtdven'],
+                    'precio'      => $sc6Data['c6_prunit'],
+                    'valor'       => $sc6Data['c6_valor'],
+                    'tes'         => $sc6Data['c6_tes'],
+                ]);
 
                 $sc6DataList[] = $sc6Data;
                 $itemNumber++;
             }
-
+            \Log::info('✅ [createOrder] Commit exitoso', [
+                'orderNumber' => $orderNumber,
+                'items_count' => count($sc6DataList),
+            ]);
             DB::connection('ocr_capyc_vendedores')->commit();
 
             return response()->json([
@@ -209,10 +238,19 @@ class ProcessOrderController extends Controller
         } catch (\Exception $e) {
             DB::connection('ocr_capyc_vendedores')->rollBack();
 
+            \Log::error('❌ [createOrder] Error creando orden', [
+                'error'      => $e->getMessage(),
+                'trace'      => $e->getTraceAsString(),
+                'clientCode' => $clientCode,
+                'filial'     => $filial,
+                'oc_cliente' => $ocCliente,
+            ]);
+
             return response()->json([
                 'error' => 'Failed to create order: ' . $e->getMessage(),
             ], 500);
         }
+
     }
     private function generarOcCliente(): string
     {
