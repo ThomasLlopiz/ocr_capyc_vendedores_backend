@@ -31,13 +31,15 @@ class ProcessOrderController extends Controller
             return response()->json(['error' => 'No articles provided'], 400);
         }
 
-        $c5_naturez = trim((string) $request->input('c5_naturez', 'ENVASES'));
-        $c5_tabela  = trim((string) $request->input('c5_tabela', '151'));
-        $c5_moeda   = trim((string) $request->input('c5_moeda', '1'));
-        $c5_tiplib  = trim((string) $request->input('c5_tiplib', '1'));
-        $c5_docger  = trim((string) $request->input('c5_docger', '1'));
-        $c5_xobs    = trim((string) $request->input('c5_xobs', ''));
-        $c5_xpdf    = $request->input('c5_xpdf');
+        $c5_naturez     = trim((string) $request->input('c5_naturez', 'ENVASES'));
+        $c5_tabela      = trim((string) $request->input('c5_tabela', '151'));
+        $c5_moeda       = trim((string) $request->input('c5_moeda', '1'));
+        $c5_tiplib      = trim((string) $request->input('c5_tiplib', '1'));
+        $c5_docger      = trim((string) $request->input('c5_docger', '1'));
+        $c5_xobs        = trim((string) $request->input('c5_xobs', ''));
+        $c5_xpdf        = $request->input('c5_xpdf');
+        $c5_tes         = (string) $request->input('c5_tes', '1');
+        $c5_ocduplicada = $request->input('c5_ocduplicada');
 
         DB::connection('ocr_capyc_vendedores')->beginTransaction();
 
@@ -59,38 +61,40 @@ class ProcessOrderController extends Controller
             DB::connection('ocr_capyc_vendedores')
                 ->table('sc5010')
                 ->insert([
-                    'c5_filial'    => $filial,
-                    'c5_num'       => $orderNumber,
-                    'c5_tipo'      => 'N',
-                    'c5_cliente'   => $client->a1_cod,
-                    'c5_lojacli'   => $store,
-                    'c5_client'    => $client->a1_cod,
-                    'c5_lojaent'   => $client->a1_loja,
-                    'c5_xnomcli'   => $client->a1_nome,
-                    'c5_naturez'   => $c5_naturez,
-                    'c5_tabela'    => $c5_tabela,
-                    'c5_moeda'     => $c5_moeda,
-                    'c5_tiplib'    => $c5_tiplib,
-                    'c5_docger'    => $c5_docger,
-                    'c5_xobs'      => $c5_xobs,
-                    'c5_tipocli'   => $client->a1_tipo,
-                    'c5_condpag'   => $client->a1_cond,
-                    'c5_xoccli'    => $ocCliente,
-                    'c5_emissao'   => now()->format('Ymd'),
-                    'c5_xpdf'      => $c5_xpdf,
-                    'c5_txmoeda'   => '0',
-                    'c5_tpcarga'   => '2',
-                    'c5_gerawms'   => '1',
-                    'c5_solopc'    => '1',
-                    'c5_provent'   => $client->a1_est,
-                    'c5_liqprod'   => '2',
-                    'c5_idioma'    => '1',
-                    'c5_paisent'   => $client->a1_pais,
-                    'c5_tpvent'    => '1',
-                    'c5_pedecom'   => '',
-                    'c5_msblql'    => '2',
-                    'r_e_c_n_o_'   => $sc5Recno,
-                    'r_e_c_d_e_l_' => 0,
+                    'c5_filial'      => $filial,
+                    'c5_num'         => $orderNumber,
+                    'c5_tipo'        => 'N',
+                    'c5_cliente'     => $client->a1_cod,
+                    'c5_lojacli'     => $store,
+                    'c5_client'      => $client->a1_cod,
+                    'c5_lojaent'     => $client->a1_loja,
+                    'c5_xnomcli'     => $client->a1_nome,
+                    'c5_naturez'     => $c5_naturez,
+                    'c5_tabela'      => $c5_tabela,
+                    'c5_moeda'       => $c5_moeda,
+                    'c5_tiplib'      => $c5_tiplib,
+                    'c5_docger'      => $c5_docger,
+                    'c5_xobs'        => $c5_xobs,
+                    'c5_tipocli'     => $client->a1_tipo,
+                    'c5_condpag'     => $client->a1_cond,
+                    'c5_xoccli'      => $ocCliente,
+                    'c5_emissao'     => now()->format('Ymd'),
+                    'c5_xpdf'        => $c5_xpdf,
+                    'c5_txmoeda'     => '0',
+                    'c5_tpcarga'     => '2',
+                    'c5_gerawms'     => '1',
+                    'c5_solopc'      => '1',
+                    'c5_provent'     => $client->a1_est,
+                    'c5_liqprod'     => '2',
+                    'c5_idioma'      => '1',
+                    'c5_paisent'     => $client->a1_pais,
+                    'c5_tpvent'      => '1',
+                    'c5_pedecom'     => '',
+                    'c5_msblql'      => '2',
+                    'c5_tes'         => $c5_tes,
+                    'c5_ocduplicada' => $c5_ocduplicada, // 👈 NUEVO
+                    'r_e_c_n_o_'     => $sc5Recno,
+                    'r_e_c_d_e_l_'   => 0,
                 ]);
 
             $itemNumber  = 1;
@@ -279,17 +283,20 @@ class ProcessOrderController extends Controller
             ->firstOrFail();
 
         $payload = $request->validate([
-            'estado_ocs' => 'integer|min:0|max:9|nullable',
-            'c5_naturez' => 'string|nullable',
-            'c5_tabela'  => 'string|nullable',
-            'c5_moeda'   => 'string|nullable',
-            'c5_tiplib'  => 'string|nullable',
-            'c5_docger'  => 'string|nullable',
-            'c5_xobs'    => 'string|nullable',
-            'c5_xoccli'  => 'string|nullable',
-            'c5_condpag' => 'string|nullable',
-            'c5_tipocli' => 'string|nullable',
+            'estado_ocs'     => 'integer|min:0|max:9|nullable',
+            'c5_naturez'     => 'string|nullable',
+            'c5_tabela'      => 'string|nullable',
+            'c5_moeda'       => 'string|nullable',
+            'c5_tiplib'      => 'string|nullable',
+            'c5_docger'      => 'string|nullable',
+            'c5_xobs'        => 'string|nullable',
+            'c5_xoccli'      => 'string|nullable',
+            'c5_condpag'     => 'string|nullable',
+            'c5_tipocli'     => 'string|nullable',
+            'c5_tes'         => 'string|nullable', // 👈 CLAVE
+            'c5_ocduplicada' => 'string|nullable', // 👈 CLAVE
         ]);
+
         $payload = collect($payload);
         if ($payload->has('c5_xobs')) {
             $payload['c5_xobs'] = trim((string) ($payload['c5_xobs'] ?? ''));
@@ -313,15 +320,18 @@ class ProcessOrderController extends Controller
     public function updateOrderItem(Request $request, $orderNumber, $item)
     {
         $data = $request->only([
-            'c6_entreg',
-            'c6_xoccli',
-            'c6_prunit',
-            'c6_prcven',
-            'c6_valor',
-            'c6_qtdven',
-            'c6_tes',
+            'c5_tabela',
+            'c5_moeda',
+            'c5_tiplib',
+            'c5_docger',
+            'c5_xobs',
+            'c5_tes',         // 👈 CLAVE
+            'c5_ocduplicada', // 👈 CLAVE
+            'filial',
         ]);
-
+        if (isset($data['c5_tes'])) {
+            $data['c5_tes'] = (string) $data['c5_tes'];
+        }
         if (array_key_exists('c6_xoccli', $data)) {
             $xoccli = $data['c6_xoccli'];
             $xoccli = is_string($xoccli) ? trim($xoccli) : $xoccli;
