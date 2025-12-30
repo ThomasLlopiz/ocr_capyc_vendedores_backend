@@ -320,14 +320,14 @@ class ProcessOrderController extends Controller
     public function updateOrderItem(Request $request, $orderNumber, $item)
     {
         $data = $request->only([
-            'c5_tabela',
-            'c5_moeda',
-            'c5_tiplib',
-            'c5_docger',
-            'c5_xobs',
-            'c5_tes',         // 👈 CLAVE
-            'c5_ocduplicada', // 👈 CLAVE
-            'filial',
+            'c6_entreg',
+            'c6_prunit',
+            'c6_prcven',
+            'c6_valor',
+            'c6_qtdven',
+            'c6_qtdlib',
+            'c6_qtdemp',
+            'c6_xoccli',
         ]);
         if (isset($data['c5_tes'])) {
             $data['c5_tes'] = (string) $data['c5_tes'];
