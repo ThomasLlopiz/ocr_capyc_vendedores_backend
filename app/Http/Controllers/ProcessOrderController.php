@@ -100,7 +100,7 @@ class ProcessOrderController extends Controller
                     'c5_pedecom'     => '',
                     'c5_msblql'      => '2',
                     'c5_tes'         => $c5_tes,
-                    'c5_ocduplicada' => $c5_ocduplicada, // 👈 NUEVO
+                    'c5_ocduplicada' => $c5_ocduplicada,
                     'r_e_c_n_o_'     => $sc5Recno,
                     'r_e_c_d_e_l_'   => 0,
                 ]);
@@ -331,8 +331,10 @@ class ProcessOrderController extends Controller
             'c5_xoccli'      => 'string|nullable',
             'c5_condpag'     => 'string|nullable',
             'c5_tipocli'     => 'string|nullable',
-            'c5_tes'         => 'string|nullable', // 👈 CLAVE
-            'c5_ocduplicada' => 'string|nullable', // 👈 CLAVE
+            'c5_tes'         => 'string|nullable',
+            'c5_ocduplicada' => 'string|nullable',
+            'c5_xpdf'        => 'string|nullable',
+
         ]);
 
         $payload = collect($payload);
