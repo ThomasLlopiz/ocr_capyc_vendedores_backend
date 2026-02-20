@@ -3,12 +3,9 @@
 use Illuminate\Support\Str;
 
 return [
-
-    // 👇 Ojo acá: default tiene que ser tu conexión OCR
     'default' => env('DB_CONNECTION', 'ocr_capyc_vendedores'),
 
     'connections' => [
-
         'ocr_capyc_vendedores' => [
             'driver' => 'pgsql',
             'host' => env('DB_HOST', '192.168.1.142'),
