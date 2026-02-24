@@ -15,7 +15,7 @@ class EmpresaController extends Controller
         $search = trim((string) $request->query('search', ''));
         $limit  = (int) $request->query('limit', 200);
 
-        $q = DB::connection('ocr_capyc_vendedores')
+        $q = DB::connection('totvs')
             ->table('sa1010')
             ->select(['a1_cod', 'a1_loja', 'a1_nome', 'a1_nreduz', 'a1_vend'])
             ->where(function ($w) {
@@ -69,7 +69,7 @@ class EmpresaController extends Controller
 
         $term = '%' . strtoupper(trim($codigo)) . '%';
 
-        $resultados = DB::connection('ocr_capyc_vendedores')
+        $resultados = DB::connection('totvs')
             ->table('sa1010')
             ->select(['a1_cod', 'a1_loja', 'a1_nome', 'a1_nreduz', 'a1_vend'])
             ->where(function ($q) use ($term) {
@@ -108,7 +108,7 @@ class EmpresaController extends Controller
             ], 400);
         }
 
-        $rows = DB::connection('ocr_capyc_vendedores')
+        $rows = DB::connection('totvs')
             ->table('sa1010')
             ->select(['a1_cod', 'a1_loja', 'a1_nome', 'a1_nreduz', 'a1_vend'])
             ->whereRaw('UPPER(TRIM(a1_nome)) ILIKE ?', ['%' . strtoupper($nombre) . '%'])
