@@ -9,10 +9,10 @@ class ProcessOrderController extends Controller
     public function createOrder(Request $request)
     {
         $clientCode = $request->input('client_code');
-        $store      = $request->input('store');
-        $filial     = $request->input('filial');
-        $articulos  = $request->input('articulos', []);
-        $ocCliente  = trim((string) $request->input('oc_cliente', ''));
+        $store = $request->input('store');
+        $filial = $request->input('filial');
+        $articulos = $request->input('articulos', []);
+        $ocCliente = trim((string) $request->input('oc_cliente', ''));
 
         if (
             $ocCliente === '' ||
@@ -23,7 +23,7 @@ class ProcessOrderController extends Controller
             $ocCliente = $this->generarOcCliente();
         }
 
-        if (! $filial) {
+        if (!$filial) {
             return response()->json(['error' => 'Filial is required'], 400);
         }
 
@@ -31,14 +31,16 @@ class ProcessOrderController extends Controller
             return response()->json(['error' => 'No articles provided'], 400);
         }
 
-        $c5_naturez     = trim((string) $request->input('c5_naturez', 'ENVASES'));
-        $c5_tabela      = trim((string) $request->input('c5_tabela', '151'));
-        $c5_moeda       = trim((string) $request->input('c5_moeda', '1'));
-        $c5_tiplib      = trim((string) $request->input('c5_tiplib', '1'));
-        $c5_docger      = trim((string) $request->input('c5_docger', '1'));
-        $c5_xobs        = trim((string) $request->input('c5_xobs', ''));
-        $c5_xpdf        = $request->input('c5_xpdf');
-        $c5_tes         = (string) $request->input('c5_tes', '1');
+        $c5_naturez = trim((string) $request->input('c5_naturez', 'ENVASES'));
+        $c5_tabela = $request->input('c5_tabela');
+        $c5_tabela = (empty($c5_tabela) && $c5_tabela !== 0) ? 151 : (float) $c5_tabela;
+        $c5_moeda = $request->input('c5_moeda');
+        $c5_moeda = (empty($c5_moeda) && $c5_moeda !== 0) ? 1 : (float) $c5_moeda;
+        $c5_tiplib = trim((string) $request->input('c5_tiplib', '1'));
+        $c5_docger = trim((string) $request->input('c5_docger', '1'));
+        $c5_xobs = trim((string) $request->input('c5_xobs', ''));
+        $c5_xpdf = $request->input('c5_xpdf');
+        $c5_tes = (string) $request->input('c5_tes', '1');
         $c5_ocduplicada = $request->input('c5_ocduplicada');
 
         DB::connection('ocr_capyc_vendedores')->beginTransaction();
@@ -49,77 +51,79 @@ class ProcessOrderController extends Controller
                 ->where('a1_cod', $clientCode)
                 ->first();
 
-            if (! $client) {
+            if (!$client) {
                 return response()->json(['error' => 'Client not found'], 404);
             }
 
             $orderNumber = $this->generateOrderNumber($filial);
             \Log::info('🔢 [createOrder] Número de orden generado', [
                 'orderNumber' => $orderNumber,
-                'filial'      => $filial,
-                'cliente'     => $clientCode,
-                'oc_cliente'  => $ocCliente,
-                'tes'         => $c5_tes,
-                'duplicada'   => $c5_ocduplicada,
+                'filial' => $filial,
+                'cliente' => $clientCode,
+                'oc_cliente' => $ocCliente,
+                'tes' => $c5_tes,
+                'duplicada' => $c5_ocduplicada,
             ]);
 
             $sc5Recno = DB::connection('ocr_capyc_vendedores')
                 ->table('sc5010')->max('r_e_c_n_o_') + 1;
 
+            // --- DENTRO DEL INSERT DE sc5010 ---
             DB::connection('ocr_capyc_vendedores')
                 ->table('sc5010')
                 ->insert([
-                    'c5_filial'      => $filial,
-                    'c5_num'         => $orderNumber,
-                    'c5_tipo'        => 'N',
-                    'c5_cliente'     => $client->a1_cod,
-                    'c5_lojacli'     => $store,
-                    'c5_client'      => $client->a1_cod,
-                    'c5_lojaent'     => $client->a1_loja,
-                    'c5_xnomcli'     => $client->a1_nome,
-                    'c5_naturez'     => $c5_naturez,
-                    'c5_tabela'      => $c5_tabela,
-                    'c5_moeda'       => $c5_moeda,
-                    'c5_tiplib'      => $c5_tiplib,
-                    'c5_docger'      => $c5_docger,
-                    'c5_xobs'        => $c5_xobs,
-                    'c5_tipocli'     => $client->a1_tipo,
-                    'c5_condpag'     => $client->a1_cond,
-                    'c5_xoccli'      => $ocCliente,
-                    'c5_emissao'     => now()->format('Ymd'),
-                    'c5_xpdf'        => $c5_xpdf,
-                    'c5_txmoeda'     => '0',
-                    'c5_tpcarga'     => '2',
-                    'c5_gerawms'     => '1',
-                    'c5_solopc'      => '1',
-                    'c5_provent'     => $client->a1_est,
-                    'c5_liqprod'     => '2',
-                    'c5_idioma'      => '1',
-                    'c5_paisent'     => $client->a1_pais,
-                    'c5_tpvent'      => '1',
-                    'c5_pedecom'     => '',
-                    'c5_msblql'      => '2',
-                    'c5_tes'         => $c5_tes,
+                    'c5_filial' => $filial,
+                    'c5_num' => $orderNumber,
+                    'c5_transp' => '',
+                    'c5_tipo' => 'N',
+                    'c5_cliente' => $client->a1_cod,
+                    'c5_lojacli' => $store,
+                    'c5_client' => $client->a1_cod,
+                    'c5_lojaent' => $client->a1_loja,
+                    'c5_xnomcli' => $client->a1_nome,
+                    'c5_naturez' => $c5_naturez,
+                    'c5_tabela' => $c5_tabela, // Ahora es float
+                    'c5_moeda' => $c5_moeda,  // Ahora es float
+                    'c5_tiplib' => $c5_tiplib,
+                    'c5_docger' => $c5_docger,
+                    'c5_xobs' => $c5_xobs,
+                    'c5_tipocli' => $client->a1_tipo,
+                    'c5_condpag' => $client->a1_cond,
+                    'c5_xoccli' => $ocCliente,
+                    'c5_emissao' => now()->format('Ymd'),
+                    'c5_xpdf' => $c5_xpdf,
+                    'c5_txmoeda' => 0, // Envíalo como 0 numérico, no '0' string
+                    'c5_tpcarga' => '2',
+                    'c5_gerawms' => '1',
+                    'c5_solopc' => '1',
+                    'c5_provent' => $client->a1_est,
+                    'c5_liqprod' => '2',
+                    'c5_idioma' => '1',
+                    'c5_paisent' => $client->a1_pais,
+                    'c5_tpvent' => '1',
+                    'c5_pedecom' => '',
+                    'c5_msblql' => '2',
+                    'c5_tes' => $c5_tes,
                     'c5_ocduplicada' => $c5_ocduplicada,
-                    'r_e_c_n_o_'     => $sc5Recno,
-                    'r_e_c_d_e_l_'   => 0,
+                    'r_e_c_n_o_' => (int) $sc5Recno,
+                    'r_e_c_d_e_l_' => 0,
                 ]);
             \Log::info('📌 [createOrder] SC5010 insertado', [
-                'c5_num'         => $orderNumber,
-                'c5_filial'      => $filial,
-                'c5_cliente'     => $client->a1_cod,
-                'c5_xoccli'      => $ocCliente,
-                'c5_tes'         => $c5_tes,
+                'c5_num' => $orderNumber,
+                'c5_filial' => $filial,
+                'c5_cliente' => $client->a1_cod,
+                'c5_xoccli' => $ocCliente,
+                'c5_tes' => $c5_tes,
                 'c5_ocduplicada' => $c5_ocduplicada,
-                'r_e_c_n_o_'     => $sc5Recno,
+                'r_e_c_n_o_' => $sc5Recno,
             ]);
 
-            $itemNumber  = 1;
+            $itemNumber = 1;
             $sc6DataList = [];
 
             foreach ($articulos as $art) {
                 $productCode = trim((string) ($art['product_code'] ?? ''));
-                $quantity    = (int) ($art['quantity'] ?? 0);
+                $quantity = (int) ($art['quantity'] ?? 0);
 
                 if ($quantity <= 0) {
                     $quantity = 1;
@@ -134,7 +138,7 @@ class ProcessOrderController extends Controller
                     ->where('b1_msblql', '<>', 1)
                     ->first();
 
-                if (! $product) {
+                if (!$product) {
                     throw new \Exception("Product not found: {$productCode}");
                 }
 
@@ -168,40 +172,40 @@ class ProcessOrderController extends Controller
                     ->table('sc6010')->max('r_e_c_n_o_') + 1;
 
                 $sc6Data = [
-                    'c6_filial'  => $filial,
-                    'c6_item'    => str_pad($itemNumber, 2, '0', STR_PAD_LEFT),
+                    'c6_filial' => $filial,
+                    'c6_item' => str_pad($itemNumber, 2, '0', STR_PAD_LEFT),
                     'c6_produto' => $product->b1_cod,
-                    'c6_descri'  => $art['c6_descri'] ?? $product->b1_desc,
-                    'c6_um'      => $art['c6_um'] ?? $product->b1_um,
-                    'c6_qtdven'  => $quantity,
-                    'c6_xconv'   => $conv,
-                    'c6_unsven'  => $unsven,
-                    'c6_prcven'  => $unitPrice,
-                    'c6_prunit'  => $unitPrice,
-                    'c6_valor'   => $quantity * $unitPrice,
-                    'c6_qtdlib'  => $quantity,
-                    'c6_qtdemp'  => $quantity,
-                    'c6_segum'   => $art['c6_segum'] ?? $product->b1_segum,
-                    'c6_tes'     => $art['c6_tes'] ?? $product->b1_ts,
-                    'c6_local'   => $art['c6_local'] ?? $product->b1_locpad,
-                    'c6_cf'      => '612',
-                    'c6_cli'     => $client->a1_cod,
-                    'c6_entreg'  => $entreg,
-                    'c6_loja'    => $store,
-                    'c6_num'     => $orderNumber,
-                    'c6_op'      => '07',
-                    'c6_opc'     => '',
-                    'c6_tpop'    => 'F',
-                    'c6_geranf'  => 'S',
-                    'c6_mopc'    => null,
+                    'c6_descri' => $art['c6_descri'] ?? $product->b1_desc,
+                    'c6_um' => $art['c6_um'] ?? $product->b1_um,
+                    'c6_qtdven' => $quantity,
+                    'c6_xconv' => $conv,
+                    'c6_unsven' => $unsven,
+                    'c6_prcven' => $unitPrice,
+                    'c6_prunit' => $unitPrice,
+                    'c6_valor' => $quantity * $unitPrice,
+                    'c6_qtdlib' => $quantity,
+                    'c6_qtdemp' => $quantity,
+                    'c6_segum' => $art['c6_segum'] ?? $product->b1_segum,
+                    'c6_tes' => $art['c6_tes'] ?? $product->b1_ts,
+                    'c6_local' => $art['c6_local'] ?? $product->b1_locpad,
+                    'c6_cf' => '612',
+                    'c6_cli' => $client->a1_cod,
+                    'c6_entreg' => $entreg,
+                    'c6_loja' => $store,
+                    'c6_num' => $orderNumber,
+                    'c6_op' => '07',
+                    'c6_opc' => '',
+                    'c6_tpop' => 'F',
+                    'c6_geranf' => 'S',
+                    'c6_mopc' => null,
                     'c6_sugentr' => $entreg,
-                    'c6_vdobs'   => null,
-                    'c6_rateio'  => '2',
-                    'c6_tpprod'  => '1',
+                    'c6_vdobs' => null,
+                    'c6_rateio' => '2',
+                    'c6_tpprod' => '1',
                     'c6_provent' => $client->a1_est,
                     'c6_xcenvli' => $art['c6_xcenvli'] ?? ($product->b1_xcenvli ?? ''),
                     'c6_xcodcli' => $art['c6_xcodcli'] ?? ($product->b1_xcodcli ?? ''),
-                    'c6_xoccli'  => $ocCliente,
+                    'c6_xoccli' => $ocCliente,
                     'r_e_c_n_o_' => $sc6Recno,
                 ];
 
@@ -210,12 +214,12 @@ class ProcessOrderController extends Controller
                     ->insert($sc6Data);
                 \Log::info('📦 [createOrder] Ítem SC6010 insertado', [
                     'orderNumber' => $orderNumber,
-                    'item'        => $sc6Data['c6_item'],
-                    'producto'    => $sc6Data['c6_produto'],
-                    'cantidad'    => $sc6Data['c6_qtdven'],
-                    'precio'      => $sc6Data['c6_prunit'],
-                    'valor'       => $sc6Data['c6_valor'],
-                    'tes'         => $sc6Data['c6_tes'],
+                    'item' => $sc6Data['c6_item'],
+                    'producto' => $sc6Data['c6_produto'],
+                    'cantidad' => $sc6Data['c6_qtdven'],
+                    'precio' => $sc6Data['c6_prunit'],
+                    'valor' => $sc6Data['c6_valor'],
+                    'tes' => $sc6Data['c6_tes'],
                 ]);
 
                 $sc6DataList[] = $sc6Data;
@@ -228,21 +232,21 @@ class ProcessOrderController extends Controller
             DB::connection('ocr_capyc_vendedores')->commit();
 
             return response()->json([
-                'message'      => 'Order created successfully',
+                'message' => 'Order created successfully',
                 'order_number' => $orderNumber,
-                'pdf_file'     => $c5_xpdf,
-                'sc5010'       => $sc5Recno,
-                'sc6010'       => $sc6DataList,
+                'pdf_file' => $c5_xpdf,
+                'sc5010' => $sc5Recno,
+                'sc6010' => $sc6DataList,
             ], 201);
 
         } catch (\Exception $e) {
             DB::connection('ocr_capyc_vendedores')->rollBack();
 
             \Log::error('❌ [createOrder] Error creando orden', [
-                'error'      => $e->getMessage(),
-                'trace'      => $e->getTraceAsString(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'clientCode' => $clientCode,
-                'filial'     => $filial,
+                'filial' => $filial,
                 'oc_cliente' => $ocCliente,
             ]);
 
@@ -261,7 +265,7 @@ class ProcessOrderController extends Controller
             ->orderByRaw("CAST(SUBSTRING(c5_xoccli, 5, 6) AS INTEGER) DESC")
             ->value('c5_xoccli');
 
-        if (! $last) {
+        if (!$last) {
             return 'OCC-000001';
         }
 
@@ -287,31 +291,31 @@ class ProcessOrderController extends Controller
 
         $maxTotvs = (int) $maxTotvs;
         $maxLocal = (int) $maxLocal;
-        $max      = max($maxTotvs, $maxLocal);
-        $next     = $max + 1;
+        $max = max($maxTotvs, $maxLocal);
+        $next = $max + 1;
         return str_pad((string) $next, 6, '0', STR_PAD_LEFT);
     }
 
     public function updateOrder(Request $request, $orderNumber)
     {
         \Log::info('🔹 [updateOrder] Iniciando actualización de SC5010', [
-            'orderNumber'  => $orderNumber,
+            'orderNumber' => $orderNumber,
             'request_data' => $request->all(),
         ]);
 
         $filial = $request->input('filial') ?? $request->input('c5_filial');
 
-        if (! $filial) {
+        if (!$filial) {
             $row = \App\Models\Sc5010::where('c5_num', $orderNumber)->first();
             if ($row) {
                 $filial = $row->c5_filial;
             }
         }
 
-        if (! $filial) {
+        if (!$filial) {
             \Log::warning('⚠️ [updateOrder] Falta filial', [
                 'orderNumber' => $orderNumber,
-                'data'        => $request->all(),
+                'data' => $request->all(),
             ]);
             return response()->json(['message' => 'Filial requerida'], 422);
         }
@@ -321,19 +325,19 @@ class ProcessOrderController extends Controller
             ->firstOrFail();
 
         $payload = $request->validate([
-            'estado_ocs'     => 'integer|min:0|max:9|nullable',
-            'c5_naturez'     => 'string|nullable',
-            'c5_tabela'      => 'string|nullable',
-            'c5_moeda'       => 'string|nullable',
-            'c5_tiplib'      => 'string|nullable',
-            'c5_docger'      => 'string|nullable',
-            'c5_xobs'        => 'string|nullable',
-            'c5_xoccli'      => 'string|nullable',
-            'c5_condpag'     => 'string|nullable',
-            'c5_tipocli'     => 'string|nullable',
-            'c5_tes'         => 'string|nullable',
+            'estado_ocs' => 'integer|min:0|max:9|nullable',
+            'c5_naturez' => 'string|nullable',
+            'c5_tabela' => 'string|nullable',
+            'c5_moeda' => 'string|nullable',
+            'c5_tiplib' => 'string|nullable',
+            'c5_docger' => 'string|nullable',
+            'c5_xobs' => 'string|nullable',
+            'c5_xoccli' => 'string|nullable',
+            'c5_condpag' => 'string|nullable',
+            'c5_tipocli' => 'string|nullable',
+            'c5_tes' => 'string|nullable',
             'c5_ocduplicada' => 'string|nullable',
-            'c5_xpdf'        => 'string|nullable',
+            'c5_xpdf' => 'string|nullable',
 
         ]);
 
@@ -353,7 +357,7 @@ class ProcessOrderController extends Controller
 
         return response()->json([
             'message' => 'Order updated successfully',
-            'data'    => $sc5010,
+            'data' => $sc5010,
         ], 200);
     }
 
@@ -389,7 +393,7 @@ class ProcessOrderController extends Controller
 
         try {
             $filial = $request->input('filial', '');
-            if (! $filial) {
+            if (!$filial) {
                 $filial = DB::connection('ocr_capyc_vendedores')
                     ->table('sc6010')
                     ->where('c6_num', $orderNumber)
@@ -397,9 +401,9 @@ class ProcessOrderController extends Controller
             }
             \Log::info("Iniciando actualización de ítem SC6010", [
                 'orderNumber' => $orderNumber,
-                'item'        => $item,
-                'filial'      => $filial,
-                'data'        => $data,
+                'item' => $item,
+                'filial' => $filial,
+                'data' => $data,
             ]);
 
             $affected = DB::connection('ocr_capyc_vendedores')
@@ -412,26 +416,26 @@ class ProcessOrderController extends Controller
             if ($affected === 0) {
                 \Log::warning("No se actualizó ningún registro en SC6010", [
                     'orderNumber' => $orderNumber,
-                    'item'        => $item,
-                    'filial'      => $filial,
-                    'data'        => $data,
+                    'item' => $item,
+                    'filial' => $filial,
+                    'data' => $data,
                 ]);
                 return response()->json(['error' => 'No se encontró el ítem para actualizar'], 404);
             }
 
             \Log::info("✅ Actualización de ítem SC6010 completada", [
                 'orderNumber' => $orderNumber,
-                'item'        => $item,
-                'filial'      => $filial,
-                'data'        => $data,
+                'item' => $item,
+                'filial' => $filial,
+                'data' => $data,
             ]);
 
             return response()->json(['message' => 'Order item updated successfully'], 200);
         } catch (\Exception $e) {
             \Log::error("❌ Error al actualizar ítem SC6010", [
                 'orderNumber' => $orderNumber,
-                'item'        => $item,
-                'error'       => $e->getMessage(),
+                'item' => $item,
+                'error' => $e->getMessage(),
             ]);
             return response()->json(['error' => 'Failed to update order item: ' . $e->getMessage()], 500);
         }
