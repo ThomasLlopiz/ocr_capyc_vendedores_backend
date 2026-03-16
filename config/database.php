@@ -20,7 +20,7 @@ return [
 
         'totvs' => [
             'driver' => 'pgsql',
-            'host' => env('DADOSPRO_DB_HOST', '192.168.1.141'),
+            'host' => env('DADOSPRO_DB_HOST', '192.168.1.41'),
             'port' => env('DADOSPRO_DB_PORT', '5432'),
             'database' => env('DADOSPRO_DB_DATABASE', 'dadospro2310'),
             'username' => env('DADOSPRO_DB_USERNAME', 'postgres'),
