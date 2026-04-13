@@ -50,3 +50,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/empresas', [EmpresaController::class, 'index']);
 Route::match(['get', 'post'], '/empresas/buscar', [EmpresaController::class, 'buscarCodigo']);
 Route::post('/empresas/buscar-nombre', [EmpresaController::class, 'buscarPorNombre']);
+
+Route::get('/health', function () {
+    return response()->json(['message' => 'Bienvenido a la API']);
+});

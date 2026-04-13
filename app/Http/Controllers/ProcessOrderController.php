@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -30,7 +31,7 @@ class ProcessOrderController extends Controller
         if (empty($articulos)) {
             return response()->json(['error' => 'No articles provided'], 400);
         }
-
+        $vendedor = $request->input('c5_vend1');
         $c5_naturez = trim((string) $request->input('c5_naturez', 'ENVASES'));
         $c5_tabela = $request->input('c5_tabela');
         $c5_tabela = (empty($c5_tabela) && $c5_tabela !== 0) ? 151 : (float) $c5_tabela;
@@ -56,24 +57,16 @@ class ProcessOrderController extends Controller
             }
 
             $orderNumber = $this->generateOrderNumber($filial);
-            \Log::info('🔢 [createOrder] Número de orden generado', [
-                'orderNumber' => $orderNumber,
-                'filial' => $filial,
-                'cliente' => $clientCode,
-                'oc_cliente' => $ocCliente,
-                'tes' => $c5_tes,
-                'duplicada' => $c5_ocduplicada,
-            ]);
 
             $sc5Recno = DB::connection('ocr_capyc_vendedores')
                 ->table('sc5010')->max('r_e_c_n_o_') + 1;
 
-            // --- DENTRO DEL INSERT DE sc5010 ---
             DB::connection('ocr_capyc_vendedores')
                 ->table('sc5010')
                 ->insert([
                     'c5_filial' => $filial,
                     'c5_num' => $orderNumber,
+                    'c5_vend1'   => $vendedor,
                     'c5_transp' => '',
                     'c5_tipo' => 'N',
                     'c5_cliente' => $client->a1_cod,
@@ -82,8 +75,8 @@ class ProcessOrderController extends Controller
                     'c5_lojaent' => $client->a1_loja,
                     'c5_xnomcli' => $client->a1_nome,
                     'c5_naturez' => $c5_naturez,
-                    'c5_tabela' => $c5_tabela, // Ahora es float
-                    'c5_moeda' => $c5_moeda,  // Ahora es float
+                    'c5_tabela' => $c5_tabela,
+                    'c5_moeda' => $c5_moeda,
                     'c5_tiplib' => $c5_tiplib,
                     'c5_docger' => $c5_docger,
                     'c5_xobs' => $c5_xobs,
@@ -92,7 +85,7 @@ class ProcessOrderController extends Controller
                     'c5_xoccli' => $ocCliente,
                     'c5_emissao' => now()->format('Ymd'),
                     'c5_xpdf' => $c5_xpdf,
-                    'c5_txmoeda' => 0, // Envíalo como 0 numérico, no '0' string
+                    'c5_txmoeda' => 0,
                     'c5_tpcarga' => '2',
                     'c5_gerawms' => '1',
                     'c5_solopc' => '1',
@@ -108,15 +101,6 @@ class ProcessOrderController extends Controller
                     'r_e_c_n_o_' => (int) $sc5Recno,
                     'r_e_c_d_e_l_' => 0,
                 ]);
-            \Log::info('📌 [createOrder] SC5010 insertado', [
-                'c5_num' => $orderNumber,
-                'c5_filial' => $filial,
-                'c5_cliente' => $client->a1_cod,
-                'c5_xoccli' => $ocCliente,
-                'c5_tes' => $c5_tes,
-                'c5_ocduplicada' => $c5_ocduplicada,
-                'r_e_c_n_o_' => $sc5Recno,
-            ]);
 
             $itemNumber = 1;
             $sc6DataList = [];
@@ -212,23 +196,11 @@ class ProcessOrderController extends Controller
                 DB::connection('ocr_capyc_vendedores')
                     ->table('sc6010')
                     ->insert($sc6Data);
-                \Log::info('📦 [createOrder] Ítem SC6010 insertado', [
-                    'orderNumber' => $orderNumber,
-                    'item' => $sc6Data['c6_item'],
-                    'producto' => $sc6Data['c6_produto'],
-                    'cantidad' => $sc6Data['c6_qtdven'],
-                    'precio' => $sc6Data['c6_prunit'],
-                    'valor' => $sc6Data['c6_valor'],
-                    'tes' => $sc6Data['c6_tes'],
-                ]);
 
                 $sc6DataList[] = $sc6Data;
                 $itemNumber++;
             }
-            \Log::info('✅ [createOrder] Commit exitoso', [
-                'orderNumber' => $orderNumber,
-                'items_count' => count($sc6DataList),
-            ]);
+
             DB::connection('ocr_capyc_vendedores')->commit();
 
             return response()->json([
@@ -238,23 +210,13 @@ class ProcessOrderController extends Controller
                 'sc5010' => $sc5Recno,
                 'sc6010' => $sc6DataList,
             ], 201);
-
         } catch (\Exception $e) {
             DB::connection('ocr_capyc_vendedores')->rollBack();
-
-            \Log::error('❌ [createOrder] Error creando orden', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'clientCode' => $clientCode,
-                'filial' => $filial,
-                'oc_cliente' => $ocCliente,
-            ]);
 
             return response()->json([
                 'error' => 'Failed to create order: ' . $e->getMessage(),
             ], 500);
         }
-
     }
     private function generarOcCliente(): string
     {
@@ -298,10 +260,6 @@ class ProcessOrderController extends Controller
 
     public function updateOrder(Request $request, $orderNumber)
     {
-        \Log::info('🔹 [updateOrder] Iniciando actualización de SC5010', [
-            'orderNumber' => $orderNumber,
-            'request_data' => $request->all(),
-        ]);
 
         $filial = $request->input('filial') ?? $request->input('c5_filial');
 
@@ -310,14 +268,6 @@ class ProcessOrderController extends Controller
             if ($row) {
                 $filial = $row->c5_filial;
             }
-        }
-
-        if (!$filial) {
-            \Log::warning('⚠️ [updateOrder] Falta filial', [
-                'orderNumber' => $orderNumber,
-                'data' => $request->all(),
-            ]);
-            return response()->json(['message' => 'Filial requerida'], 422);
         }
 
         $sc5010 = \App\Models\Sc5010::where('c5_num', $orderNumber)
@@ -399,12 +349,6 @@ class ProcessOrderController extends Controller
                     ->where('c6_num', $orderNumber)
                     ->value('c6_filial');
             }
-            \Log::info("Iniciando actualización de ítem SC6010", [
-                'orderNumber' => $orderNumber,
-                'item' => $item,
-                'filial' => $filial,
-                'data' => $data,
-            ]);
 
             $affected = DB::connection('ocr_capyc_vendedores')
                 ->table('sc6010')
@@ -414,31 +358,12 @@ class ProcessOrderController extends Controller
                 ->update($data);
 
             if ($affected === 0) {
-                \Log::warning("No se actualizó ningún registro en SC6010", [
-                    'orderNumber' => $orderNumber,
-                    'item' => $item,
-                    'filial' => $filial,
-                    'data' => $data,
-                ]);
                 return response()->json(['error' => 'No se encontró el ítem para actualizar'], 404);
             }
 
-            \Log::info("✅ Actualización de ítem SC6010 completada", [
-                'orderNumber' => $orderNumber,
-                'item' => $item,
-                'filial' => $filial,
-                'data' => $data,
-            ]);
-
             return response()->json(['message' => 'Order item updated successfully'], 200);
         } catch (\Exception $e) {
-            \Log::error("❌ Error al actualizar ítem SC6010", [
-                'orderNumber' => $orderNumber,
-                'item' => $item,
-                'error' => $e->getMessage(),
-            ]);
             return response()->json(['error' => 'Failed to update order item: ' . $e->getMessage()], 500);
         }
     }
-
 }
