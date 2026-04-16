@@ -322,6 +322,7 @@ class ProcessOrderController extends Controller
             'c6_qtdlib',
             'c6_qtdemp',
             'c6_xoccli',
+            'c6_tes', // <--- IMPORTANTE: Agregado
         ]);
         if (isset($data['c5_tes'])) {
             $data['c5_tes'] = (string) $data['c5_tes'];
