@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -111,7 +112,10 @@ class EmpresaController extends Controller
         $rows = DB::connection('totvs')
             ->table('sa1010')
             ->select(['a1_cod', 'a1_loja', 'a1_nome', 'a1_nreduz', 'a1_vend'])
+            // Usamos whereRaw para el nombre por el uso de UPPER/TRIM
             ->whereRaw('UPPER(TRIM(a1_nome)) ILIKE ?', ['%' . strtoupper($nombre) . '%'])
+            // Para BIGINT, simplemente pasamos el 0 como entero
+            ->where('r_e_c_d_e_l_', 0)
             ->where(function ($w) {
                 $w->whereNull('a1_msblql')
                     ->orWhereRaw("TRIM(a1_msblql) <> '1'");
