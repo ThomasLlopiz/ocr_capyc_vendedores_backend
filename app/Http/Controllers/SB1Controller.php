@@ -11,40 +11,23 @@ class SB1Controller extends Controller
     {
         $codigo = $request->input('codigo');
 
-        \Log::info('[SB1Controller] Request recibido', [
-            'codigo_raw' => $codigo,
-        ]);
-
-        if (!$codigo) {
-            \Log::warning('[SB1Controller] Código vacío en request');
-            return response()->json([
-                'success' => false,
-                'message' => 'No se recibió ningún código.',
-            ], 400);
-        }
-
         $codigo = trim($codigo);
-
-        // Ver qué conexión y DB se están usando
         $dbInfo = DB::connection('totvs')->select('select current_database(), current_user');
-        \Log::info('[SB1Controller] Info conexión totvs', [
-            'dbInfo' => $dbInfo,
-        ]);
-
         $resultados = DB::connection('totvs')
             ->table('sb1010')
+            ->selectRaw(
+                "b1_cod, 
+                b1_xcodcli, 
+                b1_um,
+                convert_from(convert_to(b1_desc, 'UTF8'), 'UTF8') as b1_desc"
+            )
             ->where(function ($query) use ($codigo) {
-                $query->where('b1_cod', 'ILIKE', "%{$codigo}%")
-                    ->orWhere('b1_xcodcli', 'ILIKE', "%{$codigo}%");
+                // Buscamos usando un cast limpio
+                $query->whereRaw("b1_cod::text ILIKE ?", ["%{$codigo}%"])
+                    ->orWhereRaw("b1_xcodcli::text ILIKE ?", ["%{$codigo}%"]);
             })
             ->where('b1_msblql', '<>', 1)
-            ->orderBy('b1_cod', 'ASC')
             ->get();
-
-        \Log::info('[SB1Controller] Resultados búsqueda', [
-            'codigo' => $codigo,
-            'count' => $resultados->count(),
-        ]);
 
         if ($resultados->isEmpty()) {
             return response()->json([
@@ -58,5 +41,4 @@ class SB1Controller extends Controller
             'data' => $resultados,
         ], 200);
     }
-
 }
