@@ -152,6 +152,8 @@ class SC5010 extends Model
         'c5_coment',
         'c5_numext',
         'estado_ocs',
+        'c5_tes',           // ← AGREGAR
+        'c5_ocduplicada',   // ← AGREGAR
     ];
 
     protected $casts = [
