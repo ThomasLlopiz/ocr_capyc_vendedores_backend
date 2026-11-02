@@ -28,6 +28,9 @@ class ConfiguracionOcr extends Model
         'priority',
         'version',
         'empresa_id',
+        'modo_extraccion',
+        'linea_regex',
+        'codigo_regex',
     ];
 
     protected $casts = [

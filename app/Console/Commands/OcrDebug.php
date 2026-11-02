@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\ConfiguracionOcr;
 use App\Models\DocumentoOcr;
+use App\Services\DespachadorOcr;
 use Illuminate\Console\Command;
 use Symfony\Component\Process\Process;
 
@@ -11,22 +12,6 @@ class OcrDebug extends Command
 {
     protected $signature = 'ocr:debug {id : ID del DocumentoOcr}';
     protected $description = 'Ejecuta ocr_cli.py sobre un documento y muestra stdout/stderr';
-
-    private const PARSERS_CONOCIDOS = [
-        'MANFREY' => '000222',
-        'TREMBLAY' => 'TREMBLAY',
-        'DON EMILIO' => 'DONEMILIO',
-        'PROLAIT' => 'PROLAIT',
-        'FAMILIA BEAUDROIT' => 'PROLAIT',
-        'FULLANISIMA' => 'FULLANISIMA',
-        'ELCOR' => '000265',
-        'RAMOLAC' => '000215',
-        'TREGAR' => '000050',
-        'GARCIA HNOS' => '000050',
-        'MOLFINO' => '000345',
-        'LA PAULINA' => '000345',
-        'INVERSIONES PARA EL AGRO' => '000382',
-    ];
 
     public function handle(): int
     {
@@ -58,7 +43,13 @@ class OcrDebug extends Command
         $this->line("=== CONFIGS ACTIVAS ===");
         $this->line("Cantidad: " . count($configs));
         foreach ($configs as $c) {
-            $this->line("  - name={$c['name']} | codigo_parser={$c['codigo']} | formato={$c['formato_numerico']}");
+            $this->line(sprintf(
+                "  - %-40s | modo=%-18s | formato=%-16s | codigo=%s",
+                $c['nombre'] ?? $c['name'] ?? '(sin nombre)',
+                $c['modo_extraccion'] ?? 'codigo_cantidad',
+                $c['formato_numerico'] ?? '-',
+                $c['codigo'] ?? '-'
+            ));
         }
 
         $jsonInput = json_encode($configs, JSON_UNESCAPED_UNICODE);
@@ -104,41 +95,6 @@ class OcrDebug extends Command
 
     private function formatearParaCli(ConfiguracionOcr $c): array
     {
-        $parserId = $this->detectarParserId($c->nombre ?? '');
-
-        return [
-            'name' => $c->name,
-            'active' => true,
-            'priority' => (int) $c->priority,
-            'codigo' => $parserId ?: (string) $c->codigo,
-            'cliente_codigo' => (string) $c->codigo,
-            'empresa_codigo' => (string) $c->codigo,
-            'cliente_codigo_confirmado' => true,
-            'nombre' => $c->nombre,
-            'nombre_fantasia' => $c->nombre_fantasia,
-            'cuit_cuil' => $c->cuit_cuil,
-            'tienda' => (string) $c->tienda,
-            'filial' => (string) $c->filial,
-            'vendedor' => (string) $c->vendedor,
-            'formato_numerico' => $c->formato_numerico,
-            'identificadores_texto' => $c->identificadores_texto ?? [],
-            'identificadores_ocr' => $c->identificadores_ocr ?? [],
-            'email_origen' => $c->email_origen ?? [],
-            'columnas' => [
-                'codigo' => $c->columnas_codigo ?? [],
-                'cantidad' => $c->columnas_cantidad ?? [],
-            ],
-        ];
-    }
-
-    private function detectarParserId(string $nombre): string
-    {
-        $upper = mb_strtoupper($nombre);
-        foreach (self::PARSERS_CONOCIDOS as $needle => $id) {
-            if (str_contains($upper, $needle)) {
-                return $id;
-            }
-        }
-        return '';
+        return app(DespachadorOcr::class)->formatearParaCli($c);
     }
 }

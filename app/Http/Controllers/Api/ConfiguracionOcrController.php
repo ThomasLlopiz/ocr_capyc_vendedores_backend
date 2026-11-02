@@ -118,7 +118,7 @@ class ConfiguracionOcrController extends Controller
             'active' => 'boolean',
             'priority' => 'integer|min:0',
 
-            'codigo' => 'required|string|max:20',
+            'codigo' => 'nullable|string|max:20',
             'tienda' => 'nullable|string|max:10',
             'filial' => 'nullable|string|max:10',
             'nombre' => 'nullable|string|max:255',
@@ -144,6 +144,9 @@ class ConfiguracionOcrController extends Controller
             'columnas_cantidad.*' => 'string|max:100',
 
             'empresa_id' => 'nullable|integer|exists:empresas,id',
+            'modo_extraccion' => 'nullable|string|in:codigo_cantidad,cantidad_codigo,custom',
+            'linea_regex' => 'nullable|string|max:500|required_if:modo_extraccion,custom',
+            'codigo_regex' => 'nullable|string|max:500',
         ]);
     }
 }
