@@ -40,7 +40,8 @@ Route::get('/health', fn() => response()->json(['message' => 'Bienvenido a la AP
 // ============================================================
 
 Route::middleware('auth:sanctum')->group(function () {
-
+    Route::get('/vendedores/buscar', [AuthController::class, 'buscarVendedores']);
+    Route::post('/users', [AuthController::class, 'store']);
     // --- Auth ---
     Route::get('/me', fn(Request $request) => $request->user());
     Route::post('/logout', [AuthController::class, 'logout']);

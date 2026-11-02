@@ -12,9 +12,53 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\QueryException;
-
+use Illuminate\Support\Facades\DB;
 class AuthController extends Controller
 {
+    // 1. Buscar vendedores en TOTVS
+    public function buscarVendedores(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        if (mb_strlen($q) < 1) {
+            return response()->json(['data' => []]);
+        }
+
+        $query = DB::connection('totvs')
+            ->table('sa3010')
+            ->selectRaw('TRIM(a3_cod) as codigo, TRIM(a3_nome) as nombre')
+            ->where(function ($qry) use ($q) {
+                $qry->whereRaw('UPPER(TRIM(a3_nome)) LIKE ?', ['%' . mb_strtoupper($q) . '%'])
+                    ->orWhereRaw('TRIM(a3_cod) LIKE ?', ['%' . $q . '%']);
+            })
+            ->groupByRaw('TRIM(a3_cod), TRIM(a3_nome)')
+            ->orderBy('nombre')
+            ->limit(20)
+            ->get();
+
+        return response()->json(['data' => $query]);
+    }
+    // 2. Crear usuario desde el panel de Admin
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+            'role' => 'required|in:admin,operador,vendedor',
+            'code' => 'nullable|array',
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
+            'code' => $request->code ?? [],
+            'email_verified_at' => now(), // Lo damos por verificado al crearlo desde admin
+        ]);
+
+        return response()->json($user, 201);
+    }
     public function index(Request $request)
     {
         $currentUser = $request->user();
@@ -137,20 +181,17 @@ class AuthController extends Controller
             $request->validate([
                 'email' => 'required|email|exists:users,email',
                 'name' => 'required|string|max:255',
-                'code' => [
-                    'nullable',
-                    'string',
-                    'size:6',
-                    Rule::unique('users', 'code')->ignore($request->email, 'email'),
-                ],
+                // CAMBIAMOS ESTO: Ahora acepta un array de códigos
+                'code' => 'nullable|array',
+                'code.*' => 'string|size:6',
                 'role' => 'nullable|string|in:user,vendedor,admin,operador',
             ], [
                 'email.required' => 'El correo es obligatorio.',
                 'email.email' => 'El correo debe ser una dirección válida.',
                 'email.exists' => 'El correo no existe en la base de datos.',
                 'name.required' => 'El nombre es obligatorio.',
-                'code.size' => 'El código debe tener exactamente 6 caracteres.',
-                'code.unique' => 'El código ya está en uso por otro usuario.',
+                'code.array' => 'El código debe ser una lista.',
+                'code.*.size' => 'Cada código debe tener exactamente 6 caracteres.',
                 'role.in' => 'El rol seleccionado no es válido.',
             ]);
 
@@ -160,39 +201,25 @@ class AuthController extends Controller
                 return response()->json(['message' => 'Solo administradores pueden actualizar usuarios.'], 403);
             }
 
+            // ACTUALIZAMOS: Guardamos el array y el rol
             $user->update([
                 'name' => $request->name,
-                'code' => $request->code,
+                'code' => $request->code ?? [],
                 'role' => $request->role,
             ]);
 
             return response()->json(['message' => 'Usuario actualizado exitosamente'], 200);
-        } catch (ValidationException $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'message' => 'The given data was invalid.',
                 'errors' => $e->errors(),
             ], 422);
-        } catch (QueryException $e) {
-            // Por si se dispara directamente la restricción UNIQUE de la DB
-            if (str_contains($e->getMessage(), 'users_code_unique')) {
-                return response()->json([
-                    'message' => 'The given data was invalid.',
-                    'errors' => [
-                        'code' => ['El código ya está en uso por otro usuario.'],
-                    ],
-                ], 422);
-            }
-
-            Log::error('Error al actualizar usuario', [
-                'error' => $e->getMessage(),
-            ]);
-
+        } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al actualizar usuario.',
+                'message' => 'Error al actualizar usuario: ' . $e->getMessage(),
             ], 500);
         }
     }
-
     public function delete(Request $request)
     {
         Log::info('Delete user endpoint hit', ['request' => $request->all()]);
