@@ -4,13 +4,12 @@ return [
     // Binario de Python del venv donde está instalado ocr_cli.py
     'python_bin' => env(
         'OCR_PYTHON_BIN',
-        'C:\\Users\\DEPIT-1\\Documents\\OCR\\page-reactocr\\ocr\\.venv\\Scripts\\python.exe'
+        'C:/Users/DEPIT-1/Documents/OCR/page-reactocr/ocr/.venv/Scripts/python.exe'
     ),
 
-    // Ruta absoluta al ocr_cli.py
     'cli_path' => env(
         'OCR_CLI_PATH',
-        base_path('../page-reactocr/ocr/ocr_cli.py')
+        'C:/Users/DEPIT-1/Documents/OCR/page-reactocr/ocr/ocr_cli.py'
     ),
 
     // Ruta a la carpeta de PDFs (relativa a base_path de Laravel)

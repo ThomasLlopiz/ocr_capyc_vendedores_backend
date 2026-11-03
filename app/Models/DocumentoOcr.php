@@ -59,6 +59,15 @@ class DocumentoOcr extends Model
     // Helpers
     public function pdfAbsolutePath(): string
     {
+        // Linux absoluto (/media/...) o Windows absoluto (C:\... o C:/...)
+        if (
+            str_starts_with($this->storage_path, '/')
+            || preg_match('/^[a-zA-Z]:[\\\\\/]/', $this->storage_path)
+        ) {
+            return $this->storage_path;
+        }
+
+        // Relativo: se resuelve desde la raíz del proyecto Laravel
         return base_path($this->storage_path);
     }
 

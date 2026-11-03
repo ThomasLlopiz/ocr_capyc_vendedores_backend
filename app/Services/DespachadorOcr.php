@@ -107,15 +107,24 @@ class DespachadorOcr
 
     private function ejecutarCli(string $pdfPath, array $configs): array
     {
+        // ← LEER DE CONFIG (no hardcodear)
         $python = config('ocr.python_bin');
         $script = config('ocr.cli_path');
         $timeout = (int) config('ocr.timeout', 120);
 
         if (!is_file($python)) {
-            throw new \RuntimeException("Python no encontrado: {$python}");
+            throw new \RuntimeException(
+                "Python no encontrado en: {$python}\n" .
+                "PHP corre como: " . get_current_user() . "\n" .
+                "Verificá OCR_PYTHON_BIN en .env"
+            );
         }
+
         if (!is_file($script)) {
-            throw new \RuntimeException("ocr_cli.py no encontrado: {$script}");
+            throw new \RuntimeException(
+                "ocr_cli.py no encontrado en: {$script}\n" .
+                "Verificá OCR_CLI_PATH en .env"
+            );
         }
 
         $process = new Process([$python, $script, $pdfPath]);
