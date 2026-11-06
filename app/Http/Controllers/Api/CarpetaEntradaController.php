@@ -21,8 +21,8 @@ class CarpetaEntradaController extends Controller
             'Solo operadores y admin'
         );
 
-        $pdfsDir = base_path(config('ocr.pdfs_dir'));
-
+        $rutaConfig = config('ocr.pdfs_dir');
+        $pdfsDir = str_starts_with($rutaConfig, '/') ? $rutaConfig : base_path($rutaConfig);
         if (!is_dir($pdfsDir)) {
             return response()->json(['data' => []]);
         }
@@ -73,8 +73,8 @@ class CarpetaEntradaController extends Controller
             'ids.*' => 'required|string',
         ]);
 
-        $pdfsDir = base_path(config('ocr.pdfs_dir'));
-
+        $rutaConfig = config('ocr.pdfs_dir');
+        $pdfsDir = str_starts_with($rutaConfig, '/') ? $rutaConfig : base_path($rutaConfig);
         $imported = [];
         $skipped = [];
         $failed = [];
@@ -92,12 +92,17 @@ class CarpetaEntradaController extends Controller
 
             $existing = DocumentoOcr::where('sha256', $sha256)->first();
             if ($existing) {
-                $skipped[] = [
-                    'id' => $existing->id,
-                    'name' => $filename,
-                    'message' => 'Ya procesado (status: ' . $existing->status . ')',
-                ];
-                continue;
+                if (in_array($existing->status, ['failed', 'error'], true)) {
+                    // Re-procesar: se borra el registro fallido y se crea uno nuevo
+                    $existing->delete();
+                } else {
+                    $skipped[] = [
+                        'id' => $existing->id,
+                        'name' => $filename,
+                        'message' => 'Ya procesado (status: ' . $existing->status . ')',
+                    ];
+                    continue;
+                }
             }
 
             try {
