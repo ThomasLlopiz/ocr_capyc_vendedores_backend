@@ -34,45 +34,37 @@ class ConfiguracionOcrController extends Controller
     /** Búsqueda de empresas en TOTVS (SA1010). */
     public function buscarEmpresas(Request $request)
     {
-        \Log::info('buscarEmpresas START', [
-            'q' => $request->query('q'),
-            'auth' => (bool) $request->user(),
-            'userId' => $request->user()?->id,
-        ]);
-
         try {
             $q = trim((string) $request->query('q', ''));
             if (mb_strlen($q) < 2) {
-                \Log::info('buscarEmpresas: q demasiado corto');
                 return response()->json(['data' => []]);
             }
 
-            $term = '%' . mb_strtolower($q) . '%';
+            $term = '%' . strtoupper($q) . '%';
 
             $rows = DB::connection('totvs')
                 ->table('sa1010')
                 ->select(['a1_filial', 'a1_cod', 'a1_loja', 'a1_nome', 'a1_nreduz', 'a1_cgc', 'a1_vend'])
-                ->whereRaw("TRIM(d_e_l_e_t_) = ''")
+                ->where('r_e_c_d_e_l_', 0)
+                ->where(function ($w) {
+                    $w->whereNull('a1_msblql')
+                        ->orWhereRaw("TRIM(a1_msblql) <> '1'");
+                })
                 ->where(function ($query) use ($term) {
-                    $query->whereRaw('LOWER(a1_cod) LIKE ?', [$term])
-                        ->orWhereRaw('LOWER(a1_nome) LIKE ?', [$term])
-                        ->orWhereRaw('LOWER(a1_nreduz) LIKE ?', [$term])
-                        ->orWhereRaw('LOWER(a1_cgc) LIKE ?', [$term]);
+                    $query->whereRaw('UPPER(TRIM(a1_cod)) ILIKE ?', [$term])
+                        ->orWhereRaw('UPPER(TRIM(a1_nome)) ILIKE ?', [$term])
+                        ->orWhereRaw('UPPER(TRIM(a1_nreduz)) ILIKE ?', [$term]);
                 })
                 ->orderBy('a1_nome')
                 ->limit(50)
                 ->get();
 
-            \Log::info('buscarEmpresas OK', ['count' => $rows->count()]);
             return response()->json(['data' => $rows]);
         } catch (\Throwable $e) {
             \Log::error('buscarEmpresas FAIL', [
-                'class' => get_class($e),
                 'message' => $e->getMessage(),
             ]);
-            return response()->json([
-                'message' => 'No se pudo consultar TOTVS: ' . $e->getMessage(),
-            ], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
     /** Crear configuración. */
