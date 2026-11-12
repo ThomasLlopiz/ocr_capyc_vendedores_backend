@@ -94,6 +94,7 @@ class DespachadorOcr
             'formato_numerico' => $c->formato_numerico,
             'modo_extraccion' => $c->modo_extraccion ?: 'codigo_cantidad',
             'linea_regex' => $c->linea_regex,
+            'ocr_psm' => $c->ocr_psm ?? null,
             'codigo_regex' => $c->codigo_regex ?? null,
             'identificadores_texto' => $c->identificadores_texto ?? [],
             'identificadores_ocr' => $c->identificadores_ocr ?? [],
