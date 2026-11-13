@@ -138,6 +138,7 @@ class EspacioTrabajoController extends Controller
         foreach ($data['articulos'] as $index => &$item) {
             $original = $previous[$index] ?? [];
             $sameCode = trim((string) ($original['Codigo'] ?? '')) === trim((string) $item['Codigo']);
+            $draftChose = ($item['_found'] ?? '') === 'ok' && filled($item['b1_cod'] ?? null);
 
             foreach ([
                 'b1_desc',
@@ -151,8 +152,11 @@ class EspacioTrabajoController extends Controller
                 'b1_xcodcli',
                 'b1_cod',
                 '_found',
+                '_candidates',
             ] as $field) {
                 unset($item[$field]);
+                if ($draftChose)
+                    continue;                    // el draft manda
                 if ($sameCode && array_key_exists($field, $original)) {
                     $item[$field] = $original[$field];
                 }
@@ -162,6 +166,15 @@ class EspacioTrabajoController extends Controller
                 $item['_found'] = 'unverified';
             }
         }
+        unset($item);
+
+        // Reinyectar la elección del operador
+        foreach ($data['articulos'] as &$item) {
+            $idx = array_search($item, $data['articulos'], true);
+            $orig = $previous[$idx] ?? null;
+            // (no hace falta, $draftChose ya lo cubre arriba)
+        }
+        unset($item);
         unset($item);
 
         $data['vendedor'] = str_pad($data['vendedor'], 6, '0', STR_PAD_LEFT);
@@ -207,7 +220,14 @@ class EspacioTrabajoController extends Controller
 
         foreach ($data['articulos'] as $index => $input) {
             $original = $extracted['articulos'][$index];
-
+            if (($original['_found'] ?? '') !== 'ok' && ($input['_found'] ?? '') === 'ok') {
+                foreach (['b1_desc', 'b1_conv', 'b1_cxxpl', 'b1_um', 'b1_segum', 'b1_xcenvli', 'b1_ts', 'b1_locpad', 'b1_xcodcli', 'b1_cod'] as $k) {
+                    if (isset($input[$k]))
+                        $original[$k] = $input[$k];
+                }
+                $original['_found'] = 'ok';
+                $original['_candidates'] = [];
+            }
             if (trim((string) $original['Codigo']) !== trim((string) $input['Codigo'])) {
                 foreach ([
                     'b1_desc',
@@ -431,30 +451,51 @@ class EspacioTrabajoController extends Controller
         foreach ($data['articulos'] as &$item) {
             $code = trim((string) ($item['Codigo'] ?? ''));
 
-            $product = DB::connection('totvs')->table('sb1010')
+            $products = DB::connection('totvs')->table('sb1010')
                 ->select('b1_cod', 'b1_desc', 'b1_um', 'b1_segum', 'b1_xcenvli', 'b1_conv', 'b1_cxxpl', 'b1_ts', 'b1_locpad', 'b1_xcodcli')
                 ->where('r_e_c_d_e_l_', 0)
                 ->where(function ($q) use ($code) {
                     $q->whereRaw('TRIM(b1_cod) = ?', [$code])
                         ->orWhereRaw('TRIM(b1_xcodcli) = ?', [$code]);
                 })
-                ->first();
+                ->orderBy('b1_cod')
+                ->get();
 
-            $item['_found'] = $product ? 'ok' : 'missing';
+            // Preservar elección previa del operador si el candidato sigue existiendo
+            $prevB1Cod = trim((string) ($item['b1_cod'] ?? ''));
+            $prevIsCandidate = $prevB1Cod !== ''
+                && $products->contains(fn($p) => trim((string) $p->b1_cod) === $prevB1Cod);
 
-            if ($product) {
-                foreach ((array) $product as $key => $value) {
-                    $item[$key] = trim((string) $value);
+            if ($products->count() === 0) {
+                $item['_found'] = 'missing';
+                $item['_candidates'] = [];
+            } elseif ($products->count() === 1 || $prevIsCandidate) {
+                $chosen = $prevIsCandidate
+                    ? $products->firstWhere(fn($p) => trim((string) $p->b1_cod) === $prevB1Cod)
+                    : $products->first();
+
+                $item['_found'] = 'ok';
+                $item['_candidates'] = [];
+                foreach ((array) $chosen as $k => $v) {
+                    $item[$k] = trim((string) $v);
+                }
+            } else {
+                $item['_found'] = 'ambiguous';
+                $item['_candidates'] = $products->map(fn($p) => array_map(
+                    fn($v) => trim((string) $v),
+                    (array) $p
+                ))->all();
+                // Limpiar b1_* de la extracción previa para que no quede data "vieja"
+                foreach (['b1_cod', 'b1_desc', 'b1_um', 'b1_segum', 'b1_xcenvli', 'b1_conv', 'b1_cxxpl', 'b1_ts', 'b1_locpad', 'b1_xcodcli'] as $k) {
+                    unset($item[$k]);
                 }
             }
         }
         unset($item);
 
         $document->update(['extracted' => $data]);
-
         return $document->fresh();
     }
-
     // ============================================================
     // CREAR PEDIDO → delega en ProcessOrderController::createOrder
     // ============================================================
@@ -468,6 +509,12 @@ class EspacioTrabajoController extends Controller
         $extracted = $document->extracted ?? [];
 
         abort_if(empty($extracted['articulos']), 422, 'El documento no tiene artículos');
+        $ambiguos = array_filter($extracted['articulos'], fn($a) => ($a['_found'] ?? '') === 'ambiguous');
+        abort_if(
+            count($ambiguos) > 0,
+            422,
+            count($ambiguos) . ' artículo(s) tienen más de un producto con el mismo código interno. Elegí uno antes de crear el pedido.'
+        );
         abort_if(empty($extracted['codigo']), 422, 'Falta código de cliente');
         abort_if(empty($extracted['filial']), 422, 'Falta filial. Completala antes de crear el pedido.');
         abort_if(empty($extracted['vendedor']), 422, 'Falta vendedor');
