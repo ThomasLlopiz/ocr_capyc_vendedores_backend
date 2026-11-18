@@ -136,7 +136,7 @@ class ConfiguracionOcrController extends Controller
             'columnas_cantidad.*' => 'string|max:100',
 
             'empresa_id' => 'nullable|integer|exists:empresas,id',
-            'modo_extraccion' => 'nullable|string|in:codigo_cantidad,cantidad_codigo,custom',
+            'modo_extraccion' => 'nullable|string|in:codigo_cantidad,cantidad_codigo,custom,custom_ocr',
             'linea_regex' => 'nullable|string|max:500|required_if:modo_extraccion,custom',
             'codigo_regex' => 'nullable|string|max:500',
         ]);

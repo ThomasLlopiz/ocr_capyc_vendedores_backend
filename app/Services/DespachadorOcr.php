@@ -78,6 +78,7 @@ class DespachadorOcr
     public function formatearParaCli(ConfiguracionOcr $c): array
     {
         return [
+            'id' => (int) $c->id,
             'name' => $c->name,
             'active' => true,
             'priority' => (int) $c->priority,

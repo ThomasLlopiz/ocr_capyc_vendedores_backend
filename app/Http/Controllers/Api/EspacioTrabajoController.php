@@ -168,15 +168,6 @@ class EspacioTrabajoController extends Controller
         }
         unset($item);
 
-        // Reinyectar la elección del operador
-        foreach ($data['articulos'] as &$item) {
-            $idx = array_search($item, $data['articulos'], true);
-            $orig = $previous[$idx] ?? null;
-            // (no hace falta, $draftChose ya lo cubre arriba)
-        }
-        unset($item);
-        unset($item);
-
         $data['vendedor'] = str_pad($data['vendedor'], 6, '0', STR_PAD_LEFT);
 
         $document->update([
@@ -387,6 +378,7 @@ class EspacioTrabajoController extends Controller
                     'status' => $document->status,
                 ];
             } catch (\Throwable $e) {
+
                 $forbidden = $e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
                     && $e->getStatusCode() === 403;
 
@@ -394,12 +386,10 @@ class EspacioTrabajoController extends Controller
                     'id' => $id,
                     'name' => $forbidden ? null : $document->original_name,
                     'status' => 'failed',
-                    'message' => $forbidden
-                        ? 'No autorizado'
-                        : ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
-                            ? $e->getMessage()
-                            : 'No se pudo reprocesar el documento'),
+                    'message' => $forbidden ? 'No autorizado' : $e->getMessage(),
+
                 ];
+
             }
         }
 
