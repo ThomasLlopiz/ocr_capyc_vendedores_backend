@@ -19,11 +19,16 @@ class SC5010Controller extends Controller
             });
         }
 
+        if ($request->filled('c5_num')) {
+            $numero = trim((string) $request->input('c5_num'));
+            $query->where('c5_num', 'ilike', "%{$numero}%");
+        }
+
         if ($request->filled('oc_cliente')) {
             $oc = trim((string) $request->input('oc_cliente'));
 
             if ($oc !== "") {
-                $query->where('c5_num', 'ilike', "%{$oc}%");
+                $query->where('c5_xoccli', 'ilike', "%{$oc}%");
             }
         }
         if ($request->filled('modalidad')) {
@@ -65,9 +70,21 @@ class SC5010Controller extends Controller
             'limit'       => $limit,
         ]);
 
-        $data = $query
-            ->orderBy('c5_emissao', 'desc')
-            ->paginate($limit);
+        $columnasOrdenables = ['estado_ocs', 'c5_num', 'c5_xnomcli', 'c5_emissao'];
+        $orden = $request->input('sort');
+        $direccion = $request->input('direction') === 'asc' ? 'asc' : 'desc';
+
+        if (!in_array($orden, $columnasOrdenables, true)) {
+            $orden = 'c5_num';
+            $direccion = 'desc';
+        }
+
+        $query->orderBy($orden, $direccion);
+        if ($orden !== 'c5_num') {
+            $query->orderByDesc('c5_num');
+        }
+
+        $data = $query->paginate($limit);
 
         return response()->json([
             'data'         => $data->items(),
