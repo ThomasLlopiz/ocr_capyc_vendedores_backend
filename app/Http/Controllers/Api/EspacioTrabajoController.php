@@ -444,6 +444,7 @@ class EspacioTrabajoController extends Controller
             $products = DB::connection('totvs')->table('sb1010')
                 ->select('b1_cod', 'b1_desc', 'b1_um', 'b1_segum', 'b1_xcenvli', 'b1_conv', 'b1_cxxpl', 'b1_ts', 'b1_locpad', 'b1_xcodcli')
                 ->where('r_e_c_d_e_l_', 0)
+                ->whereRaw("TRIM(COALESCE(b1_msblql, '')) <> ?", ['1'])
                 ->where(function ($q) use ($code) {
                     $q->whereRaw('TRIM(b1_cod) = ?', [$code])
                         ->orWhereRaw('TRIM(b1_xcodcli) = ?', [$code]);

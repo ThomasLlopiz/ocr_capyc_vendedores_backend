@@ -29,7 +29,8 @@ class SB1Controller extends Controller
                 $query->whereRaw("b1_cod::text ILIKE ?", ["%{$codigo}%"])
                     ->orWhereRaw("b1_xcodcli::text ILIKE ?", ["%{$codigo}%"]);
             })
-            ->where('b1_msblql', '<>', 1)
+            ->where('r_e_c_d_e_l_', 0)
+            ->whereRaw("TRIM(COALESCE(b1_msblql, '')) <> ?", ['1'])
             ->get();
 
         Log::info("📊 Resultados encontrados: " . $resultados->count());
