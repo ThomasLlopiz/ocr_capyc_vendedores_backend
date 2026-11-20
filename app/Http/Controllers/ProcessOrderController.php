@@ -49,6 +49,15 @@ class ProcessOrderController extends Controller
         try {
             $client = DB::connection('totvs')
                 ->table('sa1010')
+                ->select([
+                    'a1_cod',
+                    'a1_loja',
+                    'a1_nome',
+                    'a1_tipo',
+                    'a1_cond',
+                    'a1_est',
+                    'a1_pais',
+                ])
                 ->where('a1_cod', $clientCode)
                 ->first();
 
@@ -66,7 +75,7 @@ class ProcessOrderController extends Controller
                 ->insert([
                     'c5_filial' => $filial,
                     'c5_num' => $orderNumber,
-                    'c5_vend1'   => $vendedor,
+                    'c5_vend1' => $vendedor,
                     'c5_transp' => '',
                     'c5_tipo' => 'N',
                     'c5_cliente' => $client->a1_cod,
